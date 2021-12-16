@@ -1,0 +1,59 @@
+; This is the Calva evaluation results output window.
+; TIPS: The keyboard shortcut `ctrl+alt+c o` shows and focuses this window
+;   when connected to a REPL session.
+; Please see https://calva.io/output/ for more info.
+; Happy coding! ♥️
+
+; Aborting connect, error determining connect sequence.
+; Evaluating file: core.clj
+#'sketch.core/refresh
+clj꞉sketch.core꞉> 
+Done with image 0
+Done with image 1
+Done with image 2
+Done with image 3
+Done with image 4
+Done with image 5
+Done with image 6
+Done with image 7
+Done with image 8
+Done with image 9
+; Evaluating file: dynamic.clj
+; Syntax error compiling at (c:\Users\James\Closure Projects\quil-project\src\clj\sketch\dynamic.clj:30:11).
+; Unable to resolve symbol: .1 in this context
+; Evaluation of file dynamic.clj failed: class clojure.lang.Compiler$CompilerException
+
+clj꞉sketch.core꞉> 
+clj꞉sketch.dynamic꞉> 
+; Evaluating file: dynamic.clj
+#'sketch.dynamic/setup
+clj꞉sketch.dynamic꞉> 
+; Evaluating file: core.clj
+#'sketch.core/refresh
+clj꞉sketch.core꞉> 
+Done with image 0
+Done with image 1
+Done with image 2
+Done with image 3
+Done with image 4
+Done with image 5
+Done with image 6
+Done with image 7
+Done with image 8
+Done with image 9
+; Evaluating file: dynamic.clj
+#'sketch.dynamic/setup
+clj꞉sketch.dynamic꞉> 
+; Evaluating file: core.clj
+#'sketch.core/refresh
+clj꞉sketch.core꞉> 
+Done with image 0
+Done with image 1
+Done with image 2
+Done with image 3
+Done with image 4
+Done with image 5
+Done with image 6
+Done with image 7
+Done with image 8
+Done with image 9
