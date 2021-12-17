@@ -8,5 +8,5 @@
   :jvm-opts ["-Xms1200m" "-Xmx1200M" "-server"]
   :source-paths ["src/clj"]
   :java-source-paths ["src/java"]
-  :aot [sketch.dynamic]
+  :aot [sketch.dynamic sketch.runcore]
   :main sketch.runcore)

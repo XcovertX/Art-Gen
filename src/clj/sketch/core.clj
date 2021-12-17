@@ -7,9 +7,11 @@
   :title "Sketch"
   :setup dynamic/setup
   :draw dynamic/draw
-  :size [500 500])
+  :size [dynamic/window-height dynamic/window-width])
 
 (defn refresh []
   (use :reload 'sketch.dynamic)
   (.loop example))
+
+(vec [1234 23 4])
 
