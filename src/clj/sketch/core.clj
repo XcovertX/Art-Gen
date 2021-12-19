@@ -12,6 +12,3 @@
 (defn refresh []
   (use :reload 'sketch.dynamic)
   (.loop example))
-
-(vec [1234 23 4])
-
