@@ -6,6 +6,7 @@ pom.xml.asc
 *.jar
 *.class
 *.mdb
-*.clj-kondo
+*.clj-kondo/
+*.calva
 /.lein-*
 /.nrepl-port
