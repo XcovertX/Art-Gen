@@ -16,7 +16,7 @@
 
 (def triangle-map (atom {:triangle-count 0 :triangles ()}))
 
-(defrecord Triangle [number x1 y1 x2 y2 x3 y3])
+(defrecord Triangle [number iteration x1 y1 x2 y2 x3 y3])
 
 (defn getMiddle
   "find the middle of two given coordinates"
@@ -124,7 +124,7 @@
                              (get longest-side 0)    (get longest-side 1)
                              (get opposite-corner 0) (get opposite-corner 1))
             (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1)))
-          (addTriangle (Triangle. (@triangle-map :triangle-count) x1 y1 x2 y2 x3 y3)))
+          (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3)))
         (if (< rand2 93)
           (do
             (divideTriangles tri-map depth
@@ -132,8 +132,8 @@
                              (get longest-side 2)    (get longest-side 3)
                              (get opposite-corner 0) (get opposite-corner 1))
             (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1)))
-          (addTriangle (Triangle. (@triangle-map :triangle-count) x1 y1 x2 y2 x3 y3))))
-      (addTriangle (Triangle. (@triangle-map :triangle-count) x1 y1 x2 y2 x3 y3)))))
+          (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3))))
+      (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3)))))
 
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"

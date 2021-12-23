@@ -16,7 +16,7 @@
   (color-mode :hsb 360 100 100 1.0)
   (stroke 40 90 90 1)
   (stroke-weight 1)
-   (doseq [img-num (range 5)] ;; picks how many pictures to make
+   (doseq [img-num (range 1)] ;; picks how many pictures to make
      (background 0 0 0)
     ;; do drawing here
 
@@ -25,7 +25,7 @@
 
 
      (reset! divider/triangle-map {:triangle-count 0 :triangles ()})
-     (divider/buildTriangles 3)
+     (divider/buildTriangles 8)
      (pprint (str "Total triangles: " (get @divider/triangle-map :triangle-count)))
      (pprint @divider/triangle-map)
 
