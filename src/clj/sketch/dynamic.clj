@@ -11,32 +11,47 @@
   
   (:import [processing.core PShape PGraphics]))
 
+(def img (ref nil))
+(def img-url "test.jpg")
+
+(defn setup []
+  (dosync (ref-set img (load-image img-url))))
+
 (defn draw []
   (no-loop)
   (color-mode :hsb 360 100 100 1.0)
   (stroke 40 90 90 1)
   (stroke-weight 1)
-   (doseq [img-num (range 1)] ;; picks how many pictures to make
-     (background 0 0 0)
+
+  (doseq [img-num (range 5)] ;; picks how many pictures to make
+
+    (background 0 0 0)
+    (image @img 0 0)
+
+
+    ;;  (ellipse 100 100 100 100)
+
     ;; do drawing here
 
     ;;  (divider/drawGrid 50)
     ;;  (println divider/triangle-map)
 
 
-     (reset! divider/triangle-map {:triangle-count 0 :triangles ()})
-     (divider/buildTriangles 8)
-     (pprint (str "Total triangles: " (get @divider/triangle-map :triangle-count)))
-     (pprint @divider/triangle-map)
 
-     (save (str "sketch-" img-num ".tif"))
-     (let [filename (str "sketch-" img-num ".tif")
-           thumbnail (str "sketch-" img-num "-1000.tif")]
-       (save filename)
-       (sh "convert" "-LZW" filename filename)
-       (sh "convert" "-scale" "1000x1000" filename thumbnail)
-       (println "Done with image" img-num))))
+    (reset! divider/triangle-map {:triangle-count 0 :triangles ()})
+    (divider/buildTriangles 8)
+    ;;  (pprint (str "Total triangles: " (get @divider/triangle-map :triangle-count)))
+    ;;  (pprint @divider/triangle-map)
 
-(defn setup [])
+
+    (save (str "sketch-" img-num ".tif"))
+    (let [filename (str "sketch-" img-num ".tif")
+          thumbnail (str "sketch-" img-num "-1000.tif")]
+      (save filename)
+      (sh "convert" "-LZW" filename filename)
+      (sh "convert" "-scale" "1000x1000" filename thumbnail)
+      (println "Done with image" img-num))))
+
+
   
   
