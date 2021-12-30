@@ -138,19 +138,23 @@
         zzs (map vector bc zs)]
     (reduce + (map (fn [[a b]] (* a b)) zzs))))
 
-(defn draw-triangle [img width height vertices color-fn zbuf]
+(defn z-buffer [width height]
+  (float-array (* width height) -1.0))
+
+(defn getTrianglePixels
+  "retrieves all of the pixels contained within a given triangle"
+  [vertices]
+  (let [[xmin ymin xmax ymax] (bbox vertices window-width window-height)])
+  )
+
+(defn draw-triangle [width height vertices color]
   (let [[xmin ymin xmax ymax] (bbox vertices width height)]
     (doall
-     (pmap
+     (map
       (fn [[x y :as p]]
         (let [bc (barycentric vertices p)]
           (if (visible? bc)
-            (let [z (z-coord vertices bc)
-                  idx (int (+ x (* y width)))]
-              (if (> z (aget ^floats zbuf idx))
-                (do
-                  (aset-int img idx (color-fn bc))
-                  (aset-float zbuf idx z)))))))
+            (set-pixel x y color))))
       (for [y (range ymin ymax)
             x (range xmin xmax)]
         [x y])))))
@@ -181,7 +185,9 @@
                              (get longest-side 0)    (get longest-side 1)
                              (get opposite-corner 0) (get opposite-corner 1))
             (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1)))
-          (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3)))
+          (do
+            (draw-triangle window-width window-height [[x1 y1] [x2 y2] [x3 y3]] (color 37 150 190))
+            (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3))))
         (if (< rand2 93)
           (do
             (divideTriangles tri-map depth
@@ -189,8 +195,12 @@
                              (get longest-side 2)    (get longest-side 3)
                              (get opposite-corner 0) (get opposite-corner 1))
             (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1)))
-          (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3))))
-      (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3)))))
+          (do
+            (draw-triangle window-width window-height [[x1 y1] [x2 y2] [x3 y3]] (color 157 37 190))
+            (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3)))))
+      (do
+        (draw-triangle window-width window-height [[x1 y1] [x2 y2] [x3 y3]] (color 190 37 41))
+        (addTriangle (Triangle. (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3))))))
 
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"

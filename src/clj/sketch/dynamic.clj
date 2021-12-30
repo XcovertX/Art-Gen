@@ -11,19 +11,21 @@
   
   (:import [processing.core PShape PGraphics]))
 
-(def img (ref nil))
+
 (def img-url "test.jpg")
+(def img (ref nil))
 
 (defn setup []
-  (dosync (ref-set img (load-image img-url))))
+  (dosync (ref-set img (load-image img-url)))
+  )
 
 (defn draw []
   (no-loop)
-  (color-mode :hsb 360 100 100 1.0)
-  (stroke 40 90 90 1)
+  ;; (color-mode :hsb 360 100 100 1.0)
+  (stroke 40 90 90)
   (stroke-weight 1)
 
-  (doseq [img-num (range 5)] ;; picks how many pictures to make
+  (doseq [img-num (range 1)] ;; picks how many pictures to make
 
     (background 0 0 0)
     (image @img 0 0)
@@ -39,7 +41,8 @@
 
 
     (reset! divider/triangle-map {:triangle-count 0 :triangles ()})
-    (divider/buildTriangles 8)
+    (divider/buildTriangles 14)
+    ;; (divider/draw-triangle img window-width window-height )
     ;;  (pprint (str "Total triangles: " (get @divider/triangle-map :triangle-count)))
     ;;  (pprint @divider/triangle-map)
 
