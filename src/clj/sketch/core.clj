@@ -10,4 +10,3 @@
   ;; :update refresh
   :draw dynamic/draw
   :size [divider/window-height divider/window-width])
-
