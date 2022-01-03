@@ -12,7 +12,7 @@
   (:import [processing.core PShape PGraphics]))
 
 
-(def img-url "test.jpg")
+(def img-url "rhc.jpeg")
 (def img (ref nil))
 
 (defn setup []
@@ -24,15 +24,27 @@
   [pixel-collection]
   (map
    (fn [pix]
-     (let [x (pix :x)
-           y (pix :y)]
-       {:r (red (get-pixel 11 11)) :g (green (get-pixel 11 2)) :b (blue (get-pixel 222 3))}))
+     (let [x (:x pix)
+           y (:y pix)]
+       {:r (red (get-pixel x y)) :g (green (get-pixel x y)) :b (blue (get-pixel x y))}))
    (for [pix pixel-collection] pix)))
 
 (defn calculateAverageColor
   "calculates the average color of a given collection of colors"
-  [colors]
-  (colors 0))
+  [pixels key]
+  (int
+   (/
+    (reduce +
+            (map
+             (fn [pixel]
+               (let [color (first (getPixelColors (vector pixel)))
+                     rgb (key color)]
+                 (conj rgb)))
+             (for [pixel pixels] pixel))) 
+    (let [num (count pixels)]
+      (if (> num 0)
+        num
+        1)))))
 
 (defn draw []
   (no-loop)
@@ -40,13 +52,10 @@
   (stroke 40 90 90)
   (stroke-weight 1)
 
-  (doseq [img-num (range 2)] ;; picks how many pictures to make
+  (doseq [img-num (range 10)] ;; picks how many pictures to make
 
     (background 0 0 0)
     (image @img 0 0)
-
-
-    ;;  (ellipse 100 100 100 100)
 
     ;; do drawing here
 
@@ -55,37 +64,19 @@
 
 
 
-    ;; (reset! divider/triangle-map {:triangle-count 0 :triangles []})
-    (divider/buildTriangles 3)
+    (reset! divider/triangle-map {:triangle-count 0 :triangles []})
+    (divider/buildTriangles 14)
+    (doseq [tri (@divider/triangle-map :triangles)]
+      (let [p (:pix tri)
+            aver-r (calculateAverageColor p :r)
+            aver-g (calculateAverageColor p :g)
+            aver-b (calculateAverageColor p :b)]
+        (doseq [coord p]
+          (let [rgb (first (getPixelColors (vector coord)))
+                x (:x coord)
+                y (:y coord)]
+            (set-pixel x y (color aver-r aver-g aver-b))))))
 
-    (prn (get (vector (getPixelColors (divider/getTrianglePixels [[0 0] [2 2] [0 2]]))) 0))
-
-    ;; (prn (:pix (get (@divider/triangle-map :triangles) 4)))
-    ;; (let [ts (@divider/triangle-map :triangles)
-    ;;       t (get ts 4)
-    ;;       p (:pix t)]
-    ;;   (doseq [coord p]
-    ;;     (set-pixel (coord :x) (coord :y) (color 120 44 44))))
-    
-    ;; (doseq [tri (@divider/triangle-map :triangles)]
-    ;;   (let [p (:pix tri)
-    ;;         r (random 255)
-    ;;         g (random 255)
-    ;;         b (random 255)]
-    ;;     (doseq [coord p]
-    ;;       (set-pixel (coord :x) (coord :y) (color r g b)))))
-    
-        ;; (doseq [tri (@divider/triangle-map :triangles)]
-        ;;   (let [p (:pix tri)
-        ;;         clrs (getPixelColors p)]
-        ;;     (doseq [coord p]
-        ;;       (set-pixel 
-        ;;        (coord :x) (coord :y) 
-        ;;        (color 100 (clrs :g) (clrs :b))))))
-        
-    ;; (divider/draw-triangle img window-width window-height )
-    ;;  (pprint (str "Total triangles: " (get @divider/triangle-map :triangle-count)))
-    ;;  (pprint @divider/triangle-map)
 
 
     (save (str "sketch-" img-num ".tif"))

@@ -9,4 +9,4 @@
   :setup dynamic/setup
   ;; :update refresh
   :draw dynamic/draw
-  :size [divider/window-height divider/window-width])
+  :size [divider/window-width divider/window-height])

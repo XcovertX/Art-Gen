@@ -11,8 +11,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-height 1024) ;
-(def window-width 1024)
+(def window-height 640)
+(def window-width 551)
 
 (def triangle-map (atom {:triangle-count 0 :triangles []}))
 
@@ -133,14 +133,6 @@
 (defn visible? [bc]
   (every? #(not (neg? %)) bc))
 
-(defn z-coord [vertices bc]
-  (let [zs (map last vertices)
-        zzs (map vector bc zs)]
-    (reduce + (map (fn [[a b]] (* a b)) zzs))))
-
-(defn z-buffer [width height]
-  (float-array (* width height) -1.0))
-
 (defn getTrianglePixels
   "retrieves all of the pixels contained within a given triangle"
   [vertices]
@@ -155,18 +147,6 @@
        (for [y (range ymin ymax)
              x (range xmin xmax)]
          [x y]))))))
-
-(defn draw-triangle [width height vertices color]
-  (let [[xmin ymin xmax ymax] (bbox vertices width height)]
-    (doall
-     (map
-      (fn [[x y :as p]]
-        (let [bc (barycentric vertices p)]
-          (if (visible? bc)
-            (set-pixel x y color))))
-      (for [y (range ymin ymax)
-            x (range xmin xmax)]
-        [x y])))))
 
 (defn addTriangle
   "adds a new triangle to traingle-map"
@@ -187,36 +167,33 @@
 
     (if (>= depth 0)
       (do
-        (if (< rand1 93)
+        (if (or (< rand1 99) (> depth 8))
           (do
             (divideTriangles tri-map depth
                              (get median 0)          (get median 1)
                              (get longest-side 0)    (get longest-side 1)
                              (get opposite-corner 0) (get opposite-corner 1))
-            (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1))
+            ;; (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1))
             )
           (do
-            ;; (draw-triangle window-width window-height [[x1 y1] [x2 y2] [x3 y3]] (color 37 150 190))
             (addTriangle 
              (Triangle. 
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3 
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))
-        (if (< rand2 93)
+        (if (or (< rand1 99) (> depth 8))
           (do
             (divideTriangles tri-map depth
                              (get median 0)          (get median 1)
                              (get longest-side 2)    (get longest-side 3)
                              (get opposite-corner 0) (get opposite-corner 1))
-            (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1))
+            ;; (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1))
             )
           (do
-            ;; (draw-triangle window-width window-height [[x1 y1] [x2 y2] [x3 y3]] (color 157 37 190))
             (addTriangle 
              (Triangle. 
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]]))))))
       (do
-        ;; (draw-triangle window-width window-height [[x1 y1] [x2 y2] [x3 y3]] (color 190 37 41))
         (addTriangle 
          (Triangle. 
           (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
@@ -225,6 +202,6 @@
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [iteration]
-  (dividePlaneIntoTriangles 0 0 window-width window-height)
+  ;; (dividePlaneIntoTriangles 0 0 window-width window-height)
   (divideTriangles {} iteration, 0 0, window-width 0, window-width window-height)
   (divideTriangles {} iteration, 0 0, window-width window-height, 0 window-height))
