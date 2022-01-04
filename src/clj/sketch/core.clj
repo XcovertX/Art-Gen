@@ -7,6 +7,9 @@
 (q/defsketch example
   :title "Sketch"
   :setup dynamic/setup
-  ;; :update refresh
   :draw dynamic/draw
   :size [divider/window-width divider/window-height])
+
+(defn refresh []
+  (use :reload 'sketch.dynamic)
+  (.loop example))

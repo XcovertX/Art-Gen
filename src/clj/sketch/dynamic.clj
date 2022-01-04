@@ -12,7 +12,7 @@
   (:import [processing.core PShape PGraphics]))
 
 
-(def img-url "rhc.jpeg")
+(def img-url "dew.jpg")
 (def img (ref nil))
 
 (defn setup []
@@ -64,18 +64,20 @@
 
 
 
-    (reset! divider/triangle-map {:triangle-count 0 :triangles []})
-    (divider/buildTriangles 14)
-    (doseq [tri (@divider/triangle-map :triangles)]
-      (let [p (:pix tri)
-            aver-r (calculateAverageColor p :r)
-            aver-g (calculateAverageColor p :g)
-            aver-b (calculateAverageColor p :b)]
-        (doseq [coord p]
-          (let [rgb (first (getPixelColors (vector coord)))
-                x (:x coord)
-                y (:y coord)]
-            (set-pixel x y (color aver-r aver-g aver-b))))))
+    (if (> img-num 0)
+     (do
+      (reset! divider/triangle-map {:triangle-count 0 :triangles []})
+      (divider/buildTriangles 12)
+      (doseq [tri (@divider/triangle-map :triangles)]
+        (let [p (:pix tri)
+              aver-r (calculateAverageColor p :r)
+              aver-g (calculateAverageColor p :g)
+              aver-b (calculateAverageColor p :b)]
+          (doseq [coord p]
+            (let [rgb (first (getPixelColors (vector coord)))
+                  x (:x coord)
+                  y (:y coord)]
+              (set-pixel x y (color aver-r aver-g aver-b))))))))
 
 
 

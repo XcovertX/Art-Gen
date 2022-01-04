@@ -11,8 +11,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-height 640)
-(def window-width 551)
+(def window-width 764)
+(def window-height 480)
 
 (def triangle-map (atom {:triangle-count 0 :triangles []}))
 
@@ -167,7 +167,7 @@
 
     (if (>= depth 0)
       (do
-        (if (or (< rand1 99) (> depth 8))
+        (if (or (< rand1 99) (> depth 5))
           (do
             (divideTriangles tri-map depth
                              (get median 0)          (get median 1)
@@ -180,7 +180,7 @@
              (Triangle. 
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3 
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))
-        (if (or (< rand1 99) (> depth 8))
+        (if (or (< rand2 99) (> depth 5))
           (do
             (divideTriangles tri-map depth
                              (get median 0)          (get median 1)
