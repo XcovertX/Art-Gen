@@ -63,21 +63,36 @@
     ;;  (println divider/triangle-map)
 
 
-
     (if (> img-num 0)
-     (do
-      (reset! divider/triangle-map {:triangle-count 0 :triangles []})
-      (divider/buildTriangles 12)
-      (doseq [tri (@divider/triangle-map :triangles)]
-        (let [p (:pix tri)
-              aver-r (calculateAverageColor p :r)
-              aver-g (calculateAverageColor p :g)
-              aver-b (calculateAverageColor p :b)]
-          (doseq [coord p]
-            (let [rgb (first (getPixelColors (vector coord)))
-                  x (:x coord)
-                  y (:y coord)]
-              (set-pixel x y (color aver-r aver-g aver-b))))))))
+    ;;  (do
+    ;;   (reset! divider/triangle-map {:triangle-count 0 :triangles []})
+    ;;   (divider/buildTriangles 12)
+    ;;   (doseq [tri (@divider/triangle-map :triangles)]
+    ;;     (let [p (:pix tri)
+    ;;           aver-r (calculateAverageColor p :r)
+    ;;           aver-g (calculateAverageColor p :g)
+    ;;           aver-b (calculateAverageColor p :b)]
+    ;;       (doseq [coord p]
+    ;;         (let [rgb (first (getPixelColors (vector coord)))
+    ;;               x (:x coord)
+    ;;               y (:y coord)]
+    ;;           (set-pixel x y (color aver-r aver-g aver-b)))))))
+      
+      ;; (let [point (divider/findGoldenRatio divider/window-width)]
+      ;;   (divider/drawVerticalLine point {:start 0 :end divider/window-height}))
+      (do
+        (reset! divider/square-map {:square-count 0 :squares []})
+        (divider/divideGoldenRectangles 0 0 divider/window-width divider/window-height 0 14)
+        (doseq [sqr (@divider/square-map :squares)]
+          (let [p (:pix sqr)
+                aver-r (calculateAverageColor p :r)
+                aver-g (calculateAverageColor p :g)
+                aver-b (calculateAverageColor p :b)]
+            (doseq [coord p]
+              (let [rgb (first (getPixelColors (vector coord)))
+                    x (:x coord)
+                    y (:y coord)]
+                (set-pixel x y (color aver-r aver-g aver-b))))))))
 
 
 

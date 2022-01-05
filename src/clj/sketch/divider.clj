@@ -15,8 +15,10 @@
 (def window-height 480)
 
 (def triangle-map (atom {:triangle-count 0 :triangles []}))
-
 (defrecord Triangle [number iteration x1 y1 x2 y2 x3 y3 pix])
+
+(def square-map (atom {:square-count 0 :squares []}))
+(defrecord Square [number iteration x1 y1 x2 y2 pix])
 
 (defn getMiddle
   "find the middle of two given coordinates"
@@ -24,19 +26,31 @@
   (+ (/ (- coord2 coord1) 2) coord1))
 
 ;; ----------- Square division functions ------------
+(defn drawVerticalLine
+  "draws a single vertical line of a given length at a given point"
+  [x length]
+  (let [start (:start length)
+        end (:end length)]
+    (line x start x end)))
 
 (defn drawVerticalLines
   "recursively draws vertical lines
    seperated by a given distance."
   [distance x1 x2]
   (let [middle (getMiddle x1 x2)]
-
     (if (>= (- x2 x1) distance)
       (do
         (line middle 0 middle window-height)
         (drawVerticalLines distance middle x2)
         (drawVerticalLines distance x1 middle))
       ())))
+
+(defn drawHorizontalLine
+  "draws a single horizontal line of a given length at a given point"
+  [y length]
+  (let [start (:start length)
+        end (:end length)]
+    (line start y end y)))
 
 (defn drawHorizontalLines
   "recursively draws horizontal lines 
@@ -56,6 +70,80 @@
   [distance]
   (drawVerticalLines distance 0 window-width)
   (drawHorizontalLines distance 0 window-height))
+
+(defn findGoldenRatio
+  "finds the golden ratio integer of a given length"
+  [length]
+  (round (* length 0.618)))
+
+(defn addSquare
+  "adds a new square to square-map"
+  [new-square]
+  (swap! square-map update-in [:square-count] inc)
+  (swap! square-map assoc-in [:squares] (conj (@square-map :squares) new-square)))
+
+(defn getSquarePixels
+  "retrieves all of the pixels contained within a given triangle"
+  [x1 y1 x2 y2]
+  (let [[xmin ymin xmax ymax] [x1 y1 x2 y2]]
+    (filter identity
+            (doall
+             (map
+              (fn [[x y]]
+                (conj {:x x :y y}))
+              (for [y (range ymin ymax)
+                    x (range xmin xmax)]
+                [x y]))))))
+
+(defn divideGoldenRectangles
+  "recursively divides plane by into random rectangles based on the golden ratio"
+  [x y width height depth desiredDepth]
+  (let [x1 x
+        y1 y
+        x2 width
+        y2 height
+        rand1 (random 100)
+        rand2 (random 100)
+        goldenWidth (+ (findGoldenRatio (- width x1)) x1)
+        goldenHeight (+ (findGoldenRatio (- height y1)) y1)]
+    (if (< depth desiredDepth)
+      (if (even? depth)
+        (do
+          (if (> rand1 (/ (* depth depth) 2))
+            (divideGoldenRectangles goldenWidth y1 x2 y2 (inc depth) desiredDepth)
+            (addSquare
+             (Square.
+              (@square-map :square-count) depth x1 y1 x2 y2
+              (getSquarePixels x1 y1 x2 y2))))
+          (if (> rand2 (/ (* depth depth) 2))
+            (divideGoldenRectangles x1 y1 goldenWidth y2 (inc depth) desiredDepth)
+            (addSquare
+             (Square.
+              (@square-map :square-count) depth x1 y1 x2 y2
+              (getSquarePixels x1 y1 x2 y2))))
+          (drawVerticalLine goldenWidth {:start y1 :end y2}))
+        (do
+          (if (> rand1 (/ (* depth depth) 2))
+            (divideGoldenRectangles x1 goldenHeight x2 y2 (inc depth) desiredDepth)
+            (addSquare
+             (Square.
+              (@square-map :square-count) depth x1 y1 x2 y2
+              (getSquarePixels x1 y1 x2 y2))))
+          (if (> rand2 (/ (* depth depth) 2))
+            (divideGoldenRectangles x1 y1 x2 goldenHeight (inc depth) desiredDepth)
+            (addSquare
+             (Square.
+              (@square-map :square-count) depth x1 y1 x2 y2
+              (getSquarePixels x1 y1 x2 y2))))
+          (drawHorizontalLine goldenHeight {:start x1 :end x2})))
+      (do
+        (if (even? depth)
+          (drawHorizontalLine goldenHeight {:start x1 :end x2})
+          (drawVerticalLine goldenWidth {:start y1 :end y2}))
+        (addSquare
+         (Square.
+          (@square-map :square-count) depth x1 y1 x2 y2
+          (getSquarePixels x1 y1 x2 y2)))))))
 
 ;; ----------- triangle division functions ------------
 
@@ -138,15 +226,15 @@
   [vertices]
   (let [[xmin ymin xmax ymax] (bbox vertices window-width window-height)]
     (filter identity
-     (doall
-      (map
-       (fn [[x y :as p]]
-         (let [bc (barycentric vertices p)]
-           (if (visible? bc)
-             (conj {:x x :y y}))))
-       (for [y (range ymin ymax)
-             x (range xmin xmax)]
-         [x y]))))))
+            (doall
+             (map
+              (fn [[x y :as p]]
+                (let [bc (barycentric vertices p)]
+                  (if (visible? bc)
+                    (conj {:x x :y y}))))
+              (for [y (range ymin ymax)
+                    x (range xmin xmax)]
+                [x y]))))))
 
 (defn addTriangle
   "adds a new triangle to traingle-map"
@@ -176,9 +264,9 @@
             ;; (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1))
             )
           (do
-            (addTriangle 
-             (Triangle. 
-              (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3 
+            (addTriangle
+             (Triangle.
+              (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))
         (if (or (< rand2 99) (> depth 5))
           (do
@@ -189,13 +277,13 @@
             ;; (line (get median 0) (get median 1) (get opposite-corner 0) (get opposite-corner 1))
             )
           (do
-            (addTriangle 
-             (Triangle. 
+            (addTriangle
+             (Triangle.
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]]))))))
       (do
-        (addTriangle 
-         (Triangle. 
+        (addTriangle
+         (Triangle.
           (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
           (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))))
 
