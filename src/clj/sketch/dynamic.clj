@@ -1,7 +1,8 @@
 (ns sketch.dynamic
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.divider :as divider])
+            [sketch.divider :as divider]
+            [sketch.color :as color])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -11,6 +12,9 @@
   
   (:import [processing.core PShape PGraphics]))
 
+;; window height x width -- 900 x 900 for drawing
+(def window-width 764)
+(def window-height 480)
 
 (def img-url "dew.jpg")
 (def img (ref nil))
@@ -19,40 +23,13 @@
   (dosync (ref-set img (load-image img-url)))
   )
 
-(defn getPixelColors
-  "retrieves a collection of colors for a given group of pixels"
-  [pixel-collection]
-  (map
-   (fn [pix]
-     (let [x (:x pix)
-           y (:y pix)]
-       {:r (red (get-pixel x y)) :g (green (get-pixel x y)) :b (blue (get-pixel x y))}))
-   (for [pix pixel-collection] pix)))
-
-(defn calculateAverageColor
-  "calculates the average color of a given collection of colors"
-  [pixels key]
-  (int
-   (/
-    (reduce +
-            (map
-             (fn [pixel]
-               (let [color (first (getPixelColors (vector pixel)))
-                     rgb (key color)]
-                 (conj rgb)))
-             (for [pixel pixels] pixel))) 
-    (let [num (count pixels)]
-      (if (> num 0)
-        num
-        1)))))
-
 (defn draw []
   (no-loop)
   ;; (color-mode :hsb 360 100 100 1.0)
   (stroke 40 90 90)
   (stroke-weight 1)
 
-  (doseq [img-num (range 10)] ;; picks how many pictures to make
+  (doseq [img-num (range 2)] ;; picks how many pictures to make
 
     (background 0 0 0)
     (image @img 0 0)
@@ -85,11 +62,11 @@
         (divider/divideGoldenRectangles 0 0 divider/window-width divider/window-height 0 14)
         (doseq [sqr (@divider/square-map :squares)]
           (let [p (:pix sqr)
-                aver-r (calculateAverageColor p :r)
-                aver-g (calculateAverageColor p :g)
-                aver-b (calculateAverageColor p :b)]
+                aver-r (color/calculateAverageColor p :r)
+                aver-g (color/calculateAverageColor p :g)
+                aver-b (color/calculateAverageColor p :b)]
             (doseq [coord p]
-              (let [rgb (first (getPixelColors (vector coord)))
+              (let [rgb (first (color/getPixelColors (vector coord)))
                     x (:x coord)
                     y (:y coord)]
                 (set-pixel x y (color aver-r aver-g aver-b))))))))

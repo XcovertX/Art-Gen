@@ -1,6 +1,8 @@
 (ns sketch.divider
   (:require [quil.core :refer :all]
-            [clojure.java.shell :refer [sh]])
+            [clojure.java.shell :refer [sh]]
+            [sketch.calculations :as c]
+            [sketch.dynamic :as d])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -10,20 +12,11 @@
 
   (:import [processing.core PShape PGraphics]))
 
-;; window height x width -- 900 x 900 for drawing
-(def window-width 764)
-(def window-height 480)
-
 (def triangle-map (atom {:triangle-count 0 :triangles []}))
 (defrecord Triangle [number iteration x1 y1 x2 y2 x3 y3 pix])
 
 (def square-map (atom {:square-count 0 :squares []}))
 (defrecord Square [number iteration x1 y1 x2 y2 pix])
-
-(defn getMiddle
-  "find the middle of two given coordinates"
-  [coord1 coord2]
-  (+ (/ (- coord2 coord1) 2) coord1))
 
 ;; ----------- Square division functions ------------
 (defn drawVerticalLine
@@ -37,10 +30,10 @@
   "recursively draws vertical lines
    seperated by a given distance."
   [distance x1 x2]
-  (let [middle (getMiddle x1 x2)]
+  (let [middle (c/calculateMiddle x1 x2)]
     (if (>= (- x2 x1) distance)
       (do
-        (line middle 0 middle window-height)
+        (line middle 0 middle d/window-height)
         (drawVerticalLines distance middle x2)
         (drawVerticalLines distance x1 middle))
       ())))
@@ -56,11 +49,11 @@
   "recursively draws horizontal lines 
    seperated by a given distance."
   [distance y1 y2]
-  (let [middle (getMiddle y1 y2)]
+  (let [middle (c/calculateMiddle y1 y2)]
 
     (if (>= (- y2 y1) distance)
       (do
-        (line 0 middle window-width middle)
+        (line 0 middle d/window-width middle)
         (drawHorizontalLines distance middle y2)
         (drawHorizontalLines distance y1 middle))
       ())))
@@ -68,13 +61,8 @@
 (defn drawGrid
   "Recursively draws a grid of a given size"
   [distance]
-  (drawVerticalLines distance 0 window-width)
-  (drawHorizontalLines distance 0 window-height))
-
-(defn findGoldenRatio
-  "finds the golden ratio integer of a given length"
-  [length]
-  (round (* length 0.618)))
+  (drawVerticalLines distance 0 d/window-width)
+  (drawHorizontalLines distance 0 d/window-height))
 
 (defn addSquare
   "adds a new square to square-map"
@@ -104,8 +92,8 @@
         y2 height
         rand1 (random 100)
         rand2 (random 100)
-        goldenWidth (+ (findGoldenRatio (- width x1)) x1)
-        goldenHeight (+ (findGoldenRatio (- height y1)) y1)]
+        goldenWidth (+ (c/calculateGoldenRatio (- width x1)) x1)
+        goldenHeight (+ (c/calculateGoldenRatio (- height y1)) y1)]
     (if (< depth desiredDepth)
       (if (even? depth)
         (do
@@ -168,19 +156,6 @@
         (vector x2 y2 x3 y3 x1 y1)
         (vector x3 y3 x1 y1 x2 y2)))))
 
-(defn calculateSlope
-  "calculates the slope give two points"
-  [[x1 y1 x2 y2]]
-  (/ (- y2 y1) (- x2 x1)))
-
-(defn calculateMedian
-  "find the half-way point of a given distance"
-  [[x1 y1 x2 y2 x3 y3]]
-  (let [random-int (+ (random 20) 30)
-        new-y (+ (round (* (- y2 y1) (/ random-int 100))) y1)
-        new-x (+ (round (* (- x2 x1) (/ random-int 100))) x1)]
-    (vector new-x new-y)))
-
 (defn getOppositeCorner
   "finds the opposing corner of a triangle given two other points"
   [[x1 y1 x2 y2 x3 y3]]
@@ -224,7 +199,7 @@
 (defn getTrianglePixels
   "retrieves all of the pixels contained within a given triangle"
   [vertices]
-  (let [[xmin ymin xmax ymax] (bbox vertices window-width window-height)]
+  (let [[xmin ymin xmax ymax] (bbox vertices d/window-width d/window-height)]
     (filter identity
             (doall
              (map
@@ -247,7 +222,7 @@
    along the longest edge"
   [tri-map iteration x1 y1 x2 y2 x3 y3]
   (let [longest-side (determineLongestTriangleSide x1 y1 x2 y2 x3 y3)
-        median (calculateMedian longest-side)
+        median (c/calculateMedian longest-side)
         opposite-corner (getOppositeCorner longest-side)
         depth (dec iteration)
         rand1 (random 1 100)
@@ -291,5 +266,5 @@
   "Recursively builds triangles to a given iteration"
   [iteration]
   ;; (dividePlaneIntoTriangles 0 0 window-width window-height)
-  (divideTriangles {} iteration, 0 0, window-width 0, window-width window-height)
-  (divideTriangles {} iteration, 0 0, window-width window-height, 0 window-height))
+  (divideTriangles {} iteration, 0 0, d/window-width 0, d/window-width d/window-height)
+  (divideTriangles {} iteration, 0 0, d/window-width d/window-height, 0 d/window-height))
