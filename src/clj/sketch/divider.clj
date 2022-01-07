@@ -63,8 +63,6 @@
 (defn divideVert
   [distance x1 y1 x2 y2]
   (let [xIntervals (take-nth distance (range (- x2 x1)))]
-    ;; (doseq [x xIntervals]
-    ;;   (drawVerticalLine x {:start y1 :end y2}))
     xIntervals))
 
 (defn drawHorizontalLine
@@ -77,8 +75,6 @@
 (defn divideHorz
   [distance x1 y1 x2 y2]
   (let [yIntervals (take-nth distance (range (- y2 y1)))]
-    ;; (doseq [y yIntervals]
-    ;;   (drawHorizontalLine y {:start x1 :end x2}))
     yIntervals))
 
 (defn divideGrid
@@ -88,7 +84,8 @@
         yIntervals (into [] (divideHorz distance x1 y1 x2 y2))]
     (mapv
      (fn [[x y]] (conj {:x x :y y}))
-     (for [[x y] (map vector xIntervals yIntervals)]
+     (for [x xIntervals
+           y yIntervals]
        [x y]))))
 
 (defn drawHorizontalLines
