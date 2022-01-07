@@ -2,7 +2,8 @@
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
             [sketch.divider :as divider]
-            [sketch.color :as color])
+            [sketch.color :as color]
+            [sketch.hitomezashi :as hito])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -32,7 +33,7 @@
   (doseq [img-num (range 2)] ;; picks how many pictures to make
 
     (background 0 0 0)
-    (image @img 0 0)
+    ;; (image @img 0 0)
 
     ;; do drawing here
 
@@ -40,7 +41,7 @@
     ;;  (println divider/triangle-map)
 
 
-    (if (> img-num 0)
+    ;; (if (> img-num 0)
     ;;  (do
     ;;   (reset! divider/triangle-map {:triangle-count 0 :triangles []})
     ;;   (divider/buildTriangles 12)
@@ -54,24 +55,31 @@
     ;;               x (:x coord)
     ;;               y (:y coord)]
     ;;           (set-pixel x y (color aver-r aver-g aver-b)))))))
-      
+
       ;; (let [point (divider/findGoldenRatio divider/window-width)]
       ;;   (divider/drawVerticalLine point {:start 0 :end divider/window-height}))
-      (do
-        (reset! divider/square-map {:square-count 0 :squares []})
-        (divider/divideGoldenRectangles 0 0 divider/window-width divider/window-height 0 14)
-        (doseq [sqr (@divider/square-map :squares)]
-          (let [p (:pix sqr)
-                aver-r (color/calculateAverageColor p :r)
-                aver-g (color/calculateAverageColor p :g)
-                aver-b (color/calculateAverageColor p :b)]
-            (doseq [coord p]
-              (let [rgb (first (color/getPixelColors (vector coord)))
-                    x (:x coord)
-                    y (:y coord)]
-                (set-pixel x y (color aver-r aver-g aver-b))))))))
+      ;; (do
+      ;;   (reset! divider/square-map {:square-count 0 :squares []})
+      ;;   (divider/divideGoldenRectangles 0 0 divider/window-width divider/window-height 0 14)
+      ;;   (doseq [sqr (@divider/square-map :squares)]
+      ;;     (let [p (:pix sqr)
+      ;;           aver-r (color/calculateAverageColor p :r)
+      ;;           aver-g (color/calculateAverageColor p :g)
+      ;;           aver-b (color/calculateAverageColor p :b)]
+      ;;       (doseq [coord p]
+      ;;         (let [rgb (first (color/getPixelColors (vector coord)))
+      ;;               x (:x coord)
+      ;;               y (:y coord)]
+      ;;           (set-pixel x y (color aver-r aver-g aver-b)))))))
+      ;; )
 
+    ;; (let [lines (into [] (divider/divideCanvasVertically 200))]
+    ;;   (doseq [x lines]
+    ;;    (divider/drawVerticalLine x {:start 0 :end window-height})))
 
+    (let [coords (divider/divideGrid 10 0 0 window-width window-height)]
+      (doseq [i (range 5)]
+        (println (get coords i))))
 
     (save (str "sketch-" img-num ".tif"))
     (let [filename (str "sketch-" img-num ".tif")

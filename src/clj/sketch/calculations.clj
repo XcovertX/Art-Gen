@@ -10,6 +10,15 @@
 
   (:import [processing.core PShape PGraphics]))
 
+(defn calculateDivisors
+  "finds all distinct divisors of a given number"
+  [num]
+  (into []
+   (for [n (range num)
+        :let [k n]
+        :when (= (mod num (if (= n 0) 1 n)) 0)]
+    k)))
+
 (defn calculateGoldenRatio
   "finds the golden ratio integer of a given length"
   [length]

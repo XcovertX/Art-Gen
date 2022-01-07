@@ -1,8 +1,8 @@
 (ns sketch.divider
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.calculations :as c]
-            [sketch.dynamic :as d])
+            [sketch.calculations :as calc]
+            [sketch.dynamic :as dyna])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -30,13 +30,42 @@
   "recursively draws vertical lines
    seperated by a given distance."
   [distance x1 x2]
-  (let [middle (c/calculateMiddle x1 x2)]
+  (let [middle (calc/calculateMiddle x1 x2)]
     (if (>= (- x2 x1) distance)
       (do
-        (line middle 0 middle d/window-height)
+        (line middle 0 middle dyna/window-height)
         (drawVerticalLines distance middle x2)
         (drawVerticalLines distance x1 middle))
       ())))
+
+(def xCollection (atom []))
+
+(defn divideCanvasVertical
+  "recursively draws vertical lines
+   seperated by a given distance."
+  [distance x1 x2]
+  (if (>= (- x2 x1) distance)
+   (let [middle (calc/calculateMiddle x1 x2)]
+     (divideCanvasVertical distance x1 middle)
+     (divideCanvasVertical distance middle x2)))
+  (swap! xCollection conj x1 x2))
+
+(defn divideCanvasVertically
+  "divides the canvas by the closest distinct divisor of a 
+   given number and returns a collection of x division points"
+  [divisor]
+  (let [allDivisors (calc/calculateDivisors dyna/window-width)
+        div (if (contains? allDivisors divisor)
+              divisor
+              (last (filter (fn [x] (< x divisor)) allDivisors)))]
+    (take-nth div (range dyna/window-width))))
+
+(defn divideVert
+  [distance x1 y1 x2 y2]
+  (let [xIntervals (take-nth distance (range (- x2 x1)))]
+    ;; (doseq [x xIntervals]
+    ;;   (drawVerticalLine x {:start y1 :end y2}))
+    xIntervals))
 
 (defn drawHorizontalLine
   "draws a single horizontal line of a given length at a given point"
@@ -45,15 +74,32 @@
         end (:end length)]
     (line start y end y)))
 
+(defn divideHorz
+  [distance x1 y1 x2 y2]
+  (let [yIntervals (take-nth distance (range (- y2 y1)))]
+    ;; (doseq [y yIntervals]
+    ;;   (drawHorizontalLine y {:start x1 :end x2}))
+    yIntervals))
+
+(defn divideGrid
+   "divides the canvas by a given distance and returns all intersecting points"
+  [distance x1 y1 x2 y2]
+  (let [xIntervals (into [] (divideVert distance x1 y1 x2 y2))
+        yIntervals (into [] (divideHorz distance x1 y1 x2 y2))]
+    (mapv
+     (fn [[x y]] (conj {:x x :y y}))
+     (for [[x y] (map vector xIntervals yIntervals)]
+       [x y]))))
+
 (defn drawHorizontalLines
   "recursively draws horizontal lines 
    seperated by a given distance."
   [distance y1 y2]
-  (let [middle (c/calculateMiddle y1 y2)]
+  (let [middle (calc/calculateMiddle y1 y2)]
 
     (if (>= (- y2 y1) distance)
       (do
-        (line 0 middle d/window-width middle)
+        (line 0 middle dyna/window-width middle)
         (drawHorizontalLines distance middle y2)
         (drawHorizontalLines distance y1 middle))
       ())))
@@ -61,8 +107,8 @@
 (defn drawGrid
   "Recursively draws a grid of a given size"
   [distance]
-  (drawVerticalLines distance 0 d/window-width)
-  (drawHorizontalLines distance 0 d/window-height))
+  (drawVerticalLines distance 0 dyna/window-width)
+  (drawHorizontalLines distance 0 dyna/window-height))
 
 (defn addSquare
   "adds a new square to square-map"
@@ -92,8 +138,8 @@
         y2 height
         rand1 (random 100)
         rand2 (random 100)
-        goldenWidth (+ (c/calculateGoldenRatio (- width x1)) x1)
-        goldenHeight (+ (c/calculateGoldenRatio (- height y1)) y1)]
+        goldenWidth (+ (calc/calculateGoldenRatio (- width x1)) x1)
+        goldenHeight (+ (calc/calculateGoldenRatio (- height y1)) y1)]
     (if (< depth desiredDepth)
       (if (even? depth)
         (do
@@ -199,7 +245,7 @@
 (defn getTrianglePixels
   "retrieves all of the pixels contained within a given triangle"
   [vertices]
-  (let [[xmin ymin xmax ymax] (bbox vertices d/window-width d/window-height)]
+  (let [[xmin ymin xmax ymax] (bbox vertices dyna/window-width dyna/window-height)]
     (filter identity
             (doall
              (map
@@ -222,7 +268,7 @@
    along the longest edge"
   [tri-map iteration x1 y1 x2 y2 x3 y3]
   (let [longest-side (determineLongestTriangleSide x1 y1 x2 y2 x3 y3)
-        median (c/calculateMedian longest-side)
+        median (calc/calculateMedian longest-side)
         opposite-corner (getOppositeCorner longest-side)
         depth (dec iteration)
         rand1 (random 1 100)
@@ -266,5 +312,5 @@
   "Recursively builds triangles to a given iteration"
   [iteration]
   ;; (dividePlaneIntoTriangles 0 0 window-width window-height)
-  (divideTriangles {} iteration, 0 0, d/window-width 0, d/window-width d/window-height)
-  (divideTriangles {} iteration, 0 0, d/window-width d/window-height, 0 d/window-height))
+  (divideTriangles {} iteration, 0 0, dyna/window-width 0, dyna/window-width dyna/window-height)
+  (divideTriangles {} iteration, 0 0, dyna/window-width dyna/window-height, 0 dyna/window-height))
