@@ -3,7 +3,8 @@
             [clojure.java.shell :refer [sh]]
             [sketch.divider :as div]
             [sketch.color :as colo]
-            [sketch.dynamic :as dyn])
+            [sketch.dynamic :as dyn]
+            [sketch.calculations :as cal])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -12,16 +13,21 @@
   (:import [org.apache.commons.math3.distribution ParetoDistribution])
   (:import [processing.core PShape PGraphics]))
 
-(defn draw-stitch
+(defn draw-stitch-segment
   "draws alternating stitch"
-  [first coords]
-  (doseq [coord coords]
-    (let [x1 (:x1 coord)
-          y1 (:y1 coord)
-          x2 (:x2 coord)
-          y2 (:y2 coord)]
-      (line x1 y1 x2 y2)))
-  )
+  [segment first]
+  (loop [i 0
+         alternate first]
+    (if (< (+ i 1) (count segment))
+      (let [from (get segment i)
+            to (get segment (+ i 1))
+            x1 (:x from)
+            y1 (:y from)
+            x2 (:x to)
+            y2 (:y to)]
+        (if (= alternate true)
+          (line x1 y1 x2 y2))
+        (recur (inc i) (not alternate))))))
 
 (defn buildXStitchSegments
   "constructs a collection of coordinates
@@ -32,7 +38,7 @@
    (filterv not-empty
             (loop [i 0
                    result []]
-              (if (> i xCount)
+              (if (> i (* xCount xCount))
                 result
                 (recur
                  (inc i)
@@ -48,7 +54,23 @@
   "constructs a collection of coordinates
    that consist of an entire stitch length
    for each xIntersection"
-  [intersections])
+    [intersections yCount]
+  
+   (filterv not-empty
+            (loop [i 0
+                   result []]
+              (if (> i (* yCount yCount))
+                result
+                (recur
+                 (inc i)
+                 (conj result
+                       (filterv (fn [y] (not= (:y y) nil))
+                                (mapv
+                                 (fn [[x y]] (conj {:x x :y y}))
+                                 (for [coord intersections]
+                                   (if (= (:y coord) i)
+                                     [(:x coord) (:y coord)]))))))))))
+
 
 (defn hito-stitch
   [xAxisNums yAxisNums stitchSize square]
@@ -57,11 +79,9 @@
         yCount (+ (int (/ (- (- y2 y1) 1) stitchSize)) 1)
         intersections (div/divideGrid stitchSize x1 y1 x2 y2)
         xSegments (buildXStitchSegments intersections xCount)
-        ySegments (buildYStitchSegments intersections)]
-    (println xCount)
-    (println yCount)
-    ;; (println xSegments)
-    (doseq [i (range 20)]
-      (println (get xSegments i)))
-    ;; (for [coord coords])
-    ))
+        ySegments (buildYStitchSegments intersections yCount)]
+
+    (doseq [segment xSegments]
+      (draw-stitch-segment segment (cal/calculateRandomBoolean)))
+    (doseq [segment ySegments]
+      (draw-stitch-segment segment (cal/calculateRandomBoolean)))))

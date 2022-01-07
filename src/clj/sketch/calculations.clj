@@ -37,6 +37,13 @@
   [coord1 coord2]
   (+ (/ (- coord2 coord1) 2) coord1))
 
+(defn calculateRandomBoolean
+  "returns a random boolean"
+  []
+  (if (> (random 100) 50)
+    true
+    false))
+
 (defn calculateSlope
   "calculates the slope give two points"
   [[x1 y1 x2 y2]]

@@ -14,8 +14,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 764)
-(def window-height 480)
+(def window-width 500)
+(def window-height 500)
 
 (def img-url "dew.jpg")
 (def img (ref nil))
@@ -30,7 +30,7 @@
   (stroke 40 90 90)
   (stroke-weight 1)
 
-  (doseq [img-num (range 2)] ;; picks how many pictures to make
+  (doseq [img-num (range 10)] ;; picks how many pictures to make
 
     (background 0 0 0)
     ;; (image @img 0 0)
@@ -77,9 +77,7 @@
     ;;   (doseq [x lines]
     ;;    (divider/drawVerticalLine x {:start 0 :end window-height})))
 
-    (let [coords (divider/divideGrid 10 0 0 window-width window-height)]
-      (doseq [i (range 5)]
-        (println (get coords i))))
+    (hito/hito-stitch 3 3 10 [0 0 window-width window-height])
 
     (save (str "sketch-" img-num ".tif"))
     (let [filename (str "sketch-" img-num ".tif")
