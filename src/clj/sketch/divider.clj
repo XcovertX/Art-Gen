@@ -1,8 +1,7 @@
 (ns sketch.divider
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.calculations :as calc]
-            [sketch.dynamic :as dyna])
+            [sketch.calculations :as calc])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -33,7 +32,7 @@
   (let [middle (calc/calculateMiddle x1 x2)]
     (if (>= (- x2 x1) distance)
       (do
-        (line middle 0 middle dyna/window-height)
+        (line middle 0 middle (height))
         (drawVerticalLines distance middle x2)
         (drawVerticalLines distance x1 middle))
       ())))
@@ -54,11 +53,11 @@
   "divides the canvas by the closest distinct divisor of a 
    given number and returns a collection of x division points"
   [divisor]
-  (let [allDivisors (calc/calculateDivisors dyna/window-width)
+  (let [allDivisors (calc/calculateDivisors width)
         div (if (contains? allDivisors divisor)
               divisor
               (last (filter (fn [x] (< x divisor)) allDivisors)))]
-    (take-nth div (range dyna/window-width))))
+    (take-nth div (range width))))
 
 (defn divideVert
   [distance x1 y1 x2 y2]
@@ -96,7 +95,7 @@
 
     (if (>= (- y2 y1) distance)
       (do
-        (line 0 middle dyna/window-width middle)
+        (line 0 middle width middle)
         (drawHorizontalLines distance middle y2)
         (drawHorizontalLines distance y1 middle))
       ())))
@@ -104,8 +103,8 @@
 (defn drawGrid
   "Recursively draws a grid of a given size"
   [distance]
-  (drawVerticalLines distance 0 dyna/window-width)
-  (drawHorizontalLines distance 0 dyna/window-height))
+  (drawVerticalLines distance 0 (width))
+  (drawHorizontalLines distance 0 (height)))
 
 (defn addSquare
   "adds a new square to square-map"
@@ -135,8 +134,8 @@
         y2 height
         rand1 (random 100)
         rand2 (random 100)
-        goldenWidth (+ (calc/calculateGoldenRatio (- width x1)) x1)
-        goldenHeight (+ (calc/calculateGoldenRatio (- height y1)) y1)]
+        goldenWidth (+ (calc/calculateGoldenRatio (- x2 x1)) x1)
+        goldenHeight (+ (calc/calculateGoldenRatio (- y2 y1)) y1)]
     (if (< depth desiredDepth)
       (if (even? depth)
         (do
@@ -242,7 +241,7 @@
 (defn getTrianglePixels
   "retrieves all of the pixels contained within a given triangle"
   [vertices]
-  (let [[xmin ymin xmax ymax] (bbox vertices dyna/window-width dyna/window-height)]
+  (let [[xmin ymin xmax ymax] (bbox vertices (width) (height))]
     (filter identity
             (doall
              (map
@@ -308,6 +307,6 @@
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [iteration]
-  ;; (dividePlaneIntoTriangles 0 0 window-width window-height)
-  (divideTriangles {} iteration, 0 0, dyna/window-width 0, dyna/window-width dyna/window-height)
-  (divideTriangles {} iteration, 0 0, dyna/window-width dyna/window-height, 0 dyna/window-height))
+
+  (divideTriangles {} iteration, 0 0, (width) 0, (width) (height))
+  (divideTriangles {} iteration, 0 0, (width) (height), 0 (height)))
