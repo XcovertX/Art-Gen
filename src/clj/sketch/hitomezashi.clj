@@ -16,16 +16,16 @@
 
 (defn draw-stitch-segment
   "draws alternating stitch"
-  [segment first]
+  [segment first xDif yDif]
   (loop [i 0
          alternate first]
     (if (< (+ i 1) (count segment))
       (let [from (get segment i)
             to (get segment (+ i 1))
-            x1 (:x from)
-            y1 (:y from)
-            x2 (:x to)
-            y2 (:y to)]
+            x1 (+ (:x from) xDif)
+            y1 (+ (:y from) yDif)
+            x2 (+ (:x to) xDif)
+            y2 (+ (:y to) yDif)]
         (if (= alternate true)
           (line x1 y1 x2 y2))
         (recur (inc i) (not alternate))))))
@@ -34,12 +34,12 @@
   "constructs a collection of coordinates
    that consist of an entire stitch length
    for each xIntersection"
-  [intersections xCount]
+  [intersections xCount stitchSize]
   
    (filterv not-empty
             (loop [i 0
                    result []]
-              (if (> i (* xCount xCount))
+              (if (>= i xCount)
                 result
                 (recur
                  (inc i)
@@ -48,19 +48,19 @@
                                 (mapv
                                  (fn [[x y]] (conj {:x x :y y}))
                                  (for [coord intersections]
-                                   (if (= (:x coord) i)
+                                   (if (= (:x coord) (* i stitchSize))
                                      [(:x coord) (:y coord)]))))))))))
 
 (defn buildYStitchSegments
   "constructs a collection of coordinates
    that consist of an entire stitch length
    for each xIntersection"
-    [intersections yCount]
+    [intersections yCount stitchSize]
   
    (filterv not-empty
             (loop [i 0
                    result []]
-              (if (> i (* yCount yCount))
+              (if (>= i yCount)
                 result
                 (recur
                  (inc i)
@@ -69,7 +69,7 @@
                                 (mapv
                                  (fn [[x y]] (conj {:x x :y y}))
                                  (for [coord intersections]
-                                   (if (= (:y coord) i)
+                                   (if (= (:y coord) (* i stitchSize))
                                      [(:x coord) (:y coord)]))))))))))
 (defn boolify-it
   "converts a given input into a boolean representation"
@@ -92,23 +92,24 @@
 (defn hito-stitch
   [xAxisInput yAxisInput stitchSize square]
   (let [[x1 y1 x2 y2] square
-        xCount (+ (int (/ (- (- x2 x1) 1) stitchSize)) 1)
-        yCount (+ (int (/ (- (- y2 y1) 1) stitchSize)) 1)
+        xStitchCount (+ (int (/ (- (- x2 x1) 1) stitchSize)) 1)
+        yStitchCount (+ (int (/ (- (- y2 y1) 1) stitchSize)) 1)
+        xDif (/ (mod (- x2 x1) stitchSize) 2)
+        yDif (/ (mod (- y2 y1) stitchSize) 2)
         intersections (div/divideGrid stitchSize x1 y1 x2 y2)
-        xSegments (buildXStitchSegments intersections xCount)
-        ySegments (buildYStitchSegments intersections yCount)
+        xSegments (buildXStitchSegments intersections xStitchCount stitchSize)
+        ySegments (buildYStitchSegments intersections yStitchCount stitchSize)
         xAxisBools (boolify-it xAxisInput)
         yAxisBools (boolify-it yAxisInput)]
 
-    ;; (println xAxisBools)
     (loop [i 0]
-      (if (< i xCount)
+      (if (< i xStitchCount)
         (do
-          (draw-stitch-segment (get xSegments i) (get xAxisBools i))
+          (draw-stitch-segment (get xSegments i) (get xAxisBools i) xDif yDif)
           (recur (inc i)))))
-    
+
     (loop [i 0]
-      (if (< i yCount)
+      (if (< i yStitchCount)
         (do
-          (draw-stitch-segment (get ySegments i) (get yAxisBools i))
+          (draw-stitch-segment (get ySegments i) (get yAxisBools i) xDif yDif)
           (recur (inc i)))))))

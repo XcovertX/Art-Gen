@@ -10,6 +10,8 @@
 
   (:import [processing.core PShape PGraphics]))
 
+
+
 (defn getPixelColors
   "retrieves a collection of colors for a given group of pixels"
   [pixel-collection]
