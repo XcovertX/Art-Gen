@@ -49,9 +49,9 @@
 (defn calculateCenter
   "finds the center of a given square"
   [w h]
-  (let [wCenter (calculateMiddle (:x w) (:y w))
-        hCenter (calculateMiddle (:x h) (:y h))]
-    {:x wCenter :y hCenter}))
+  (let [wCenter (calculateMiddle (:x w) (:x h))
+        hCenter (calculateMiddle (:y w) (:y h))]
+    [wCenter hCenter]))
 
 (defn calculateRandomBoolean
   "returns a random boolean"
@@ -68,9 +68,7 @@
 (defn calculateTriangleCenter
   "finds the center of a given triangle"
   [tri]
-  (let [[x1 y1] [(:x1 tri) (:y1 tri)]
-        [x2 y2] [(:x2 tri) (:y2 tri)]
-        [x3 y3] [(:x3 tri) (:y3 tri)]
+  (let [[x1 y1 x2 y2 x3 y3] tri
         [a1 a2] (calculateMedianTri [x1 y1 x2 y2])
         [b1 b2] (calculateMedianTri [x2 y2 x3 y3])
         [c1 c2] (calculateMedianTri [x3 y3 x1 y1])
@@ -80,3 +78,18 @@
     (mapv
      (fn [x] (conj (round (/ x 3))))
      (for [x (mapv + div1 div2 div3)] x))))
+
+(defn calculateDistance
+  "finds the distance between two given points"
+  [coord]
+  (let [[x1 y1 x2 y2] coord
+        x (- (+ (- (* x2 x2) (* x2 x1)) (* x1 x1)) (* x2 x1))
+        y (- (+ (- (* y2 y2) (* y2 y1)) (* y1 y1)) (* y2 y1))]
+    (sqrt (+ x y))))
+
+(defn calculateDistanceFromCenter
+  "finds the distance from the center of the canvas to a given point"
+  [coord]
+  (let [[x1 y1] (calculateCenter {:x 0 :y 0} {:x (width) :y (height)})
+        [x2 y2] coord]
+    (calculateDistance [x1 y1 x2 y2])))

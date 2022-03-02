@@ -272,7 +272,7 @@
 
     (if (>= depth 0)
       (do
-        (if (or (< rand1 99) (> depth 5))
+        (if (or (< rand1 99) > depth 9)
           (do
             (divideTriangles tri-map depth
                              (get median 0)          (get median 1)
@@ -285,7 +285,7 @@
              (Triangle.
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))
-        (if (or (< rand2 99) (> depth 5))
+        (if (or (< rand2 99) (> depth 9))
           (do
             (divideTriangles tri-map depth
                              (get median 0)          (get median 1)
@@ -307,6 +307,5 @@
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [iteration]
-
   (divideTriangles {} iteration, 0 0, (width) 0, (width) (height))
   (divideTriangles {} iteration, 0 0, (width) (height), 0 (height)))

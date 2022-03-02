@@ -15,10 +15,10 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1920)
-(def window-height 1080)
+(def window-width 799)
+(def window-height 605)
 
-(def img-url "abstract2.jpg")
+(def img-url "abstract-painting.jpg")
 (def img (ref nil))
 
 (defn setup []
@@ -35,40 +35,84 @@
   (doseq [img-num (range 2)] ;; picks how many pictures to make
 
     (background 0 0 0)
-    (image @img 0 0)
+    ;; (image @img 0 0)
 
     ;; do drawing here
 
     ;;  (divider/drawGrid 50)
     ;;  (println divider/triangle-map)
 
-    (println (cal/calculateTriangleCenter {:x1 5 :y1 5 :x2 43 :y2 20 :x3 32 :y3 18}))
+    (if (> img-num 0)
+      (doseq [x (range 1)]
+        (reset! divi/triangle-map {:triangle-count 0 :triangles []})
+        (divi/buildTriangles 13)
+        (doseq [tri (@divi/triangle-map :triangles)]
+          (let [p (:pix tri)
+                triangle-center (cal/calculateTriangleCenter [(:x1 tri)
+                                                              (:y1 tri)
+                                                              (:x2 tri)
+                                                              (:y2 tri)
+                                                              (:x3 tri)
+                                                              (:y3 tri)])
 
-    ;; (if (> img-num 0)
-    ;; (doseq [x (range 2)]
+                distance-to-center (cal/calculateDistanceFromCenter triangle-center)
+                rand (random 100)
+              ;; average? (cond
+              ;;           (>= distance-to-center 600) (if (< (random 100) 50)
+              ;;                                        true
+              ;;                                        false)
+              ;;           (>= distance-to-center 500) (if (< (random 100) 32)
+              ;;                                        true
+              ;;                                        false)
+              ;;           (>= distance-to-center 400) (if (< (random 100) 16)
+              ;;                                        true
+              ;;                                        false)
+              ;;           (>= distance-to-center 200) (if (< (random 100) 8)
+              ;;                                        true
+              ;;                                        false)
+              ;;           :else false)
+                depth (cond
+                        (>= (:iteration tri) 13) 26
+                        (= (:iteration tri) 12) 24
+                        (= (:iteration tri) 11) 22
+                        (= (:iteration tri) 10) 20
+                        (= (:iteration tri) 9) 18
+                        (= (:iteration tri) 8) 16
+                        (= (:iteration tri) 7) 14
+                        (= (:iteration tri) 6) 12
+                        (= (:iteration tri) 5) 10
+                        (= (:iteration tri) 4) 8
+                        (= (:iteration tri) 3) 6
+                        (= (:iteration tri) 2) 4
+                        (= (:iteration tri) 1) 2
+                        :else 0)
 
-    ;;   (reset! divi/triangle-map {:triangle-count 0 :triangles []})
-    ;;   (divi/buildTriangles 14)
-    ;;   (doseq [tri (@divi/triangle-map :triangles)]
-    ;;     (let [p (:pix tri)
-    ;;           aver-r (colo/calculateAverageColor p :r)
-    ;;           aver-g (colo/calculateAverageColor p :g)
-    ;;           aver-b (colo/calculateAverageColor p :b)]
-    ;;       (doseq [coord p]
-    ;;         (let [rgb (first (colo/getPixelColors (vector coord)))
-    ;;               x (:x coord)
-    ;;               y (:y coord)]
-    ;;           (set-pixel x y (color aver-r aver-g aver-b))))))))
+              ;; aver-r (if (= average? false)
+              ;;          (colo/calculateAverageColor p :r)
+              ;;          (- (colo/calculateAverageColor p :r) 30))
+              ;; aver-g (if (= average? false)
+              ;;          (colo/calculateAverageColor p :g)
+              ;;          (- (colo/calculateAverageColor p :g) 30))
+              ;; aver-b (if (= average? false)
+              ;;          (colo/calculateAverageColor p :b)
+              ;;          (- (colo/calculateAverageColor p :b) 30))
 
+                aver-r (- (colo/calculateAverageColor p :r) depth)
+                aver-g (+ (colo/calculateAverageColor p :g) depth)
+                aver-b (+ (colo/calculateAverageColor p :b) depth)]
 
-      (save (str "sketch-" img-num ".tif"))
-      (let [filename (str "sketch-" img-num ".tif")
-            thumbnail (str "sketch-" img-num "-1000.tif")]
-        (save filename)
-        (sh "convert" "-LZW" filename filename)
-        (sh "convert" "-scale" "1000x1000" filename thumbnail)
-        (println "Done with image" img-num))))
+            (doseq [coord p]
+              (let [rgb (first (colo/getPixelColors (vector coord)))
+                    x (:x coord)
+                    y (:y coord)]
 
+                (set-pixel x y (color aver-r aver-g aver-b))))))))
 
-  
-  
+    (save (str "sketch-" img-num ".tif"))
+    (let [filename (str "sketch-" img-num ".tif")
+          thumbnail (str "sketch-" img-num "-1000.tif")]
+      (save filename)
+      (sh "convert" "-LZW" filename filename)
+      (sh "convert" "-scale" "1000x1000" filename thumbnail)
+      (println "Done with image" img-num)))
+(println "Job finished."))
