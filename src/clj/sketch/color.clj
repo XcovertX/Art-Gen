@@ -38,3 +38,10 @@
       (if (> num 0)
         num
         1)))))
+(defn fillShape
+  "colors the entire shape with a given color"
+  [shape c]
+  (let [pixel-collection (:pix shape)]
+   (doseq [pixel pixel-collection]
+     (let [x (:x pixel) y (:y pixel)]
+       (set-pixel x y c)))))

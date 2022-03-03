@@ -101,12 +101,15 @@
                 aver-g (+ (colo/calculateAverageColor p :g) depth)
                 aver-b (+ (colo/calculateAverageColor p :b) depth)]
 
-            (doseq [coord p]
-              (let [rgb (first (colo/getPixelColors (vector coord)))
-                    x (:x coord)
-                    y (:y coord)]
+            ;; sets shape color to average of the shape's collection of pixels
+            ;; (doseq [coord p]
+            ;;   (let [rgb (first (colo/getPixelColors (vector coord)))
+            ;;         x (:x coord)
+            ;;         y (:y coord)]
 
-                (set-pixel x y (color aver-r aver-g aver-b))))))))
+            ;;     (set-pixel x y (color aver-r aver-g aver-b))))
+
+            (colo/fillShape tri (color 10 78 136))))))
 
     (save (str "sketch-" img-num ".tif"))
     (let [filename (str "sketch-" img-num ".tif")
@@ -115,4 +118,4 @@
       (sh "convert" "-LZW" filename filename)
       (sh "convert" "-scale" "1000x1000" filename thumbnail)
       (println "Done with image" img-num)))
-(println "Job finished."))
+(println "Job finished.")) 
