@@ -93,3 +93,27 @@
   (let [[x1 y1] (calculateCenter {:x 0 :y 0} {:x (width) :y (height)})
         [x2 y2] coord]
     (calculateDistance [x1 y1 x2 y2])))
+
+(defn retrieveLinePixels
+  "recurisively retrieves the pixels of a given line"
+  [x y d xend i1 i2 pixel-list]
+  (if (< x xend)
+    (pixel-list)
+    (if (< d 0)
+      (let [newx (inc x) newy (inc y) newd (+ d i1)]
+        (retrieveLinePixels newx newy newd
+                            xend i1 i2 (conj (vector {newx newy}) pixel-list)))
+      (let [newx (inc x) newy (inc y) newd (+ d i2)]
+        (retrieveLinePixels newx newy newd
+                            xend i1 i2 (conj (vector {newx newy}) pixel-list))))))
+
+(defn calculateLine
+  "retrieves all pixels of a line between two points"
+  [start end]
+  (let [[x1 y1] start [x2 y2] end
+        dx (- x2 x1) dy (- y2 y1)
+        i1 (* 2 dy) i2 (* 2 (- dy dx))
+        d (- i1 dx)]
+    (if (< dx 0)
+      (retrieveLinePixels x2 y2 d x1 i1 i2 [])
+      (retrieveLinePixels x1 y1 d x2 i1 i2 []))))

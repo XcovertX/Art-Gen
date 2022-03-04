@@ -35,16 +35,28 @@
     (addCell
      (Cell.
       (@cell-map :cell-count) 0 grow-inc grow-rate
-      cell-center cell-center (vector cell-center)))))
+      cell-center cell-center (vector (conj cell-center {:growable true}))))))
 
 (defn drawCells
   "draws a given collection of cells"
   [cell-collection cell-color]
   (doseq [c cell-collection]
     (doseq [p (:cell-wall c)]
-      (let [x (:x p) y (:y p)]
-        (println c p x y)
+      (println p)
+      (let [x (:x p) y (:y p) growable (:growable p)]
         (set-pixel x y cell-color)))))
+
+(defn growCells
+  "grows a given group of cells"
+  [cell-collection]
+  (doseq [c cell-collection]
+    (let [theta 0
+          ;; step (/ Math/pi 12) 
+          radius (:growth-counter c)]
+      (doseq [p (:cell-wall c)]
+        (let [x (:x p) y (:y p)
+              h (+ x (* radius (cos theta)))
+              k (+ y (* radius (sin theta)))])))))
 
 
 ;; ----------- Square division functions ------------
