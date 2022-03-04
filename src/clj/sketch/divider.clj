@@ -17,6 +17,36 @@
 (def square-map (atom {:square-count 0 :squares []}))
 (defrecord Square [number iteration x1 y1 x2 y2 pix])
 
+(def cell-map (atom {:cell-count 0 :cells []}))
+(defrecord Cell [number growth-counter growth-increment growth-rate 
+                 pix center-pix cell-wall])
+
+;; -------- Cellular propagation functions ----------
+(defn addCell
+  "adds a cell to cell-map"
+  [new-cell]
+  (swap! cell-map update-in [:cell-count] inc)
+  (swap! cell-map assoc-in [:cells] (conj (@cell-map :cells) new-cell)))
+
+(defn buildCell
+  "builds a new cell"
+  [cell-center grow-inc grow-rate]
+  (let [x (:x cell-center) y (:y cell-center)]
+    (addCell
+     (Cell.
+      (@cell-map :cell-count) 0 grow-inc grow-rate
+      cell-center cell-center (vector cell-center)))))
+
+(defn drawCells
+  "draws a given collection of cells"
+  [cell-collection cell-color]
+  (doseq [c cell-collection]
+    (doseq [p (:cell-wall c)]
+      (let [x (:x p) y (:y p)]
+        (println c p x y)
+        (set-pixel x y cell-color)))))
+
+
 ;; ----------- Square division functions ------------
 (defn drawVerticalLine
   "draws a single vertical line of a given length at a given point"
@@ -113,7 +143,7 @@
   (swap! square-map assoc-in [:squares] (conj (@square-map :squares) new-square)))
 
 (defn getSquarePixels
-  "retrieves all of the pixels contained within a given triangle"
+  "retrieves all of the pixels contained within a given square"
   [x1 y1 x2 y2]
   (let [[xmin ymin xmax ymax] [x1 y1 x2 y2]]
     (filter identity
