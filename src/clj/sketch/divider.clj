@@ -1,7 +1,8 @@
 (ns sketch.divider
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.calculations :as calc])
+            [sketch.calculations :as calc]
+            )
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -28,6 +29,11 @@
   (swap! cell-map update-in [:cell-count] inc)
   (swap! cell-map assoc-in [:cells] (conj (@cell-map :cells) new-cell)))
 
+(defn updateCell
+  "atomically updates and existing cell within cell-map"
+  [index]
+  )
+
 (defn buildCell
   "builds a new cell"
   [cell-center grow-inc grow-rate]
@@ -41,8 +47,8 @@
   "draws a given collection of cells"
   [cell-collection cell-color]
   (doseq [c cell-collection]
+    (println c)
     (doseq [p (:cell-wall c)]
-      (println p)
       (let [x (:x p) y (:y p) growable (:growable p)]
         (set-pixel x y cell-color)))))
 
@@ -51,12 +57,15 @@
   [cell-collection]
   (doseq [c cell-collection]
     (let [theta 0
-          ;; step (/ Math/pi 12) 
-          radius (:growth-counter c)]
+          step (/ Math/PI 12) 
+          radius (:growth-counter c)
+          center (:center c)]
       (doseq [p (:cell-wall c)]
-        (let [x (:x p) y (:y p)
-              h (+ x (* radius (cos theta)))
-              k (+ y (* radius (sin theta)))])))))
+        (if (:growable p)
+         (let [x (:x p) y (:y p)
+               h (+ x (* radius (cos theta)))
+               k (+ y (* radius (sin theta)))]
+           (calc/calculateLine (vector x y) (vector h k))))))))
 
 
 ;; ----------- Square division functions ------------
