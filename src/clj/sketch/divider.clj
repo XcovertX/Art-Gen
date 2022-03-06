@@ -32,6 +32,8 @@
 (defn updateCell
   "atomically updates and existing cell within cell-map"
   [index]
+  (println (assoc-in (@cell-map :cells) [1 :growth-counter] 5))
+  (swap! cell-map assoc-in  [:cells index :growth-counter] 5)
   )
 
 (defn buildCell
@@ -46,8 +48,8 @@
 (defn drawCells
   "draws a given collection of cells"
   [cell-collection cell-color]
+  (println cell-collection)
   (doseq [c cell-collection]
-    (println c)
     (doseq [p (:cell-wall c)]
       (let [x (:x p) y (:y p) growable (:growable p)]
         (set-pixel x y cell-color)))))

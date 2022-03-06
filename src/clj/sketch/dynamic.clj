@@ -32,7 +32,7 @@
   (stroke 210 100 115)
   (stroke-weight 3)
 
-  (doseq [img-num (range 10)] ;; picks how many pictures to make
+  (doseq [img-num (range 2)] ;; picks how many pictures to make
 
     (background 0 0 0)
     ;; (image @img 0 0)
