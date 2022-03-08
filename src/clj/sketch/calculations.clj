@@ -96,24 +96,22 @@
 
 (defn retrieveLinePixels
   "recurisively retrieves the pixels of a given line"
-  [x y d xend i1 i2 pixel-list]
-  (if (< x xend)
-    (pixel-list)
-    (if (< d 0)
-      (let [newx (inc x) newy (inc y) newd (+ d i1)]
-        (retrieveLinePixels newx newy newd
-                            xend i1 i2 (conj (vector {newx newy}) pixel-list)))
-      (let [newx (inc x) newy (inc y) newd (+ d i2)]
-        (retrieveLinePixels newx newy newd
-                            xend i1 i2 (conj (vector {newx newy}) pixel-list))))))
+  [x1 y1 x2 y2 dx dy p pixel-list]
+  (if (< x1 x2)
+    (if (>= p 0)
+      (let [new-pixel-list (conj pixel-list {:x x1 :y x2})
+            y1 (+ y1 1) p (+ p (- (* 2 dy) (* 2 dx)))]
+        (retrieveLinePixels x1 y1 x2 y2 dx dy p new-pixel-list))
+      (let [new-pixel-list (conj pixel-list {:x x1 :y x2})
+            x1 (+ x1 1) p (+ p (* 2 dy))]
+        (retrieveLinePixels x1 y1 x2 y2 dx dy p new-pixel-list)))
+    pixel-list))
 
 (defn calculateLine
   "retrieves all pixels of a line between two points"
   [start end]
   (let [[x1 y1] start [x2 y2] end
         dx (- x2 x1) dy (- y2 y1)
-        i1 (* 2 dy) i2 (* 2 (- dy dx))
-        d (- i1 dx)]
-    (if (< dx 0)
-      (retrieveLinePixels x2 y2 d x1 i1 i2 [])
-      (retrieveLinePixels x1 y1 d x2 i1 i2 []))))
+        p (- (* 2 dy) dx)]
+    (println x1 y1 x2 y2 dx dy p)
+    (retrieveLinePixels x1 y1 x2 y2 dx dy p [])))

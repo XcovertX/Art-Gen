@@ -110,10 +110,10 @@
             ;;     (set-pixel x y (color aver-r aver-g aver-b))))))
 
         (reset! divi/cell-map {:cell-count 0 :cells []})
-        (doseq [i (range 10)]
+        (doseq [i (range 1)]
           (divi/buildCell {:x (rand-int window-width) :y (rand-int window-height)} 1 1))
         (divi/drawCells (:cells @divi/cell-map) (color 255 255 255))
-        (divi/updateCell 2)
+        (divi/growBres 30 (:cells @divi/cell-map))
         (divi/drawCells (:cells @divi/cell-map) (color 255 255 255))
         ;; (doseq [x (range 5)]
         ;;   (divi/growCells (:cells @divi/cell-map))

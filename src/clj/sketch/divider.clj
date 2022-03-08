@@ -32,9 +32,8 @@
 (defn updateCell
   "atomically updates and existing cell within cell-map"
   [index]
-  (println (assoc-in (@cell-map :cells) [1 :growth-counter] 5))
-  (swap! cell-map assoc-in  [:cells index :growth-counter] 5)
-  )
+  ;; (println (assoc-in (@cell-map :cells) [1 :growth-counter] 5))
+  (swap! cell-map assoc-in [:cells index :growth-counter] 5))
 
 (defn buildCell
   "builds a new cell"
@@ -42,16 +41,16 @@
   (let [x (:x cell-center) y (:y cell-center)]
     (addCell
      (Cell.
-      (@cell-map :cell-count) 0 grow-inc grow-rate
+      (@cell-map :cell-count) 3 grow-inc grow-rate
       cell-center cell-center (vector (conj cell-center {:growable true}))))))
 
 (defn drawCells
   "draws a given collection of cells"
   [cell-collection cell-color]
-  (println cell-collection)
   (doseq [c cell-collection]
     (doseq [p (:cell-wall c)]
       (let [x (:x p) y (:y p) growable (:growable p)]
+        (println x y)
         (set-pixel x y cell-color)))))
 
 (defn growCells
@@ -64,12 +63,45 @@
           center (:center c)]
       (doseq [p (:cell-wall c)]
         (if (:growable p)
-         (let [x (:x p) y (:y p)
-               h (+ x (* radius (cos theta)))
-               k (+ y (* radius (sin theta)))]
-           (calc/calculateLine (vector x y) (vector h k))))))))
+         (doseq []
+          (let [x (:x p) y (:y p)
+                h (+ x (* radius (cos theta)))
+                k (+ y (* radius (sin theta)))]
+            (swap! cell-map assoc-in [:cells (:number c) :cell-wall]
+                   (calc/calculateLine (vector x y) (vector h k))))))))))
 
+(defn collectCirclePixels
+  "retrieves the pixels from four quadrants of a circle"
+  [xc yc x y c]
+  (swap! cell-map assoc-in [:cells (:number c) :cell-wall]
+         (into (:cell-wall ((@cell-map :cells) 0))
+               (vector {:x (+ xc x) :y (+ yc y) :growable true}
+                       {:x (- xc x) :y (+ yc y) :growable true}
+                       {:x (+ xc x) :y (- yc y) :growable true}
+                       {:x (- xc x) :y (- yc y) :growable true}
+                       {:x (+ xc y) :y (+ yc x) :growable true}
+                       {:x (- xc y) :y (+ yc x) :growable true}
+                       {:x (+ xc y) :y (- yc x) :growable true}
+                       {:x (- xc y) :y (- yc x) :growable true}))))
 
+(defn growBres
+  "second attempt to expand a cell by a single pixel"
+  [rad c]
+  (doseq [cell c]
+    (let [xc (:x (:center-pix cell)) yc (:y (:center-pix cell))
+          x (atom 0) y (atom rad) d (atom (- 3 (* 2 rad)))
+          i (atom 0)]
+      (collectCirclePixels xc yc @x @y cell)
+      (while (and (>= @y @x) (< @i 100))
+        (swap! x inc)
+        (if (> @d 0)
+          (do
+            (swap! y dec)
+            (reset! d (+ (+ @d (* 4 (- @x @y))) 10)))
+          (reset! d (+ (+ @d (* 4 @x)) 6)))
+        (collectCirclePixels xc yc @x @y cell)
+        (swap! i inc))))
+)
 ;; ----------- Square division functions ------------
 (defn drawVerticalLine
   "draws a single vertical line of a given length at a given point"
