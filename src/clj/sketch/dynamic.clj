@@ -111,10 +111,12 @@
 
         (reset! divi/cell-map {:cell-count 0 :cells []})
         (doseq [i (range 1)]
-          (divi/buildCell {:x (rand-int window-width) :y (rand-int window-height)} 1 1))
-        (divi/drawCells (:cells @divi/cell-map) (color 255 255 255))
-        (divi/growBres 30 (:cells @divi/cell-map))
-        (divi/drawCells (:cells @divi/cell-map) (color 255 255 255))
+          (divi/buildCell {:x 100 :y 100} 3 1)
+          (divi/buildCell {:x 600 :y 570} 1 1))
+        
+        (doseq [i (range 100)]
+          ;; (divi/drawCells (:cells @divi/cell-map) (color (rand-int 255) (rand-int 255) (rand-int 255)))
+          (divi/growBres (:cells @divi/cell-map)))
         ;; (doseq [x (range 5)]
         ;;   (divi/growCells (:cells @divi/cell-map))
         ;;   (divi/drawCells (:cells @divi/cell-map) (color 255 255 255)))

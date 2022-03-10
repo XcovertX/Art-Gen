@@ -50,7 +50,7 @@
   (doseq [c cell-collection]
     (doseq [p (:cell-wall c)]
       (let [x (:x p) y (:y p) growable (:growable p)]
-        (println x y)
+        ;; (println x y)
         (set-pixel x y cell-color)))))
 
 (defn growCells
@@ -70,38 +70,80 @@
             (swap! cell-map assoc-in [:cells (:number c) :cell-wall]
                    (calc/calculateLine (vector x y) (vector h k))))))))))
 
+(defn cellCollisionCheck
+  "verifies a cell's potential growth does not collide with another cell
+   returns a collection containing any pixel that collides with another cell"
+  [cell-number pixel-collection cell-collection]
+  (let [collided-pixels (atom {:cp []})]
+    (doseq [cell cell-collection]
+      (if (not= (:number cell) cell-number)
+        (let [cell-wall (:cell-wall cell)]
+        ;; (println cell-wall)
+          (doseq [pixel pixel-collection]
+          ;; (println "pixel " pixel)
+            (if (.contains cell-wall pixel)
+              (do
+                ;; (println "found collision:" pixel)
+                (swap! collided-pixels assoc-in [:cp]
+                       (conj (@collided-pixels :cp) pixel))))))))
+    (@collided-pixels :cp)))
+    
+
+
 (defn collectCirclePixels
   "retrieves the pixels from four quadrants of a circle"
-  [xc yc x y c]
-  (swap! cell-map assoc-in [:cells (:number c) :cell-wall]
-         (into (:cell-wall ((@cell-map :cells) 0))
-               (vector {:x (+ xc x) :y (+ yc y) :growable true}
-                       {:x (- xc x) :y (+ yc y) :growable true}
-                       {:x (+ xc x) :y (- yc y) :growable true}
-                       {:x (- xc x) :y (- yc y) :growable true}
-                       {:x (+ xc y) :y (+ yc x) :growable true}
-                       {:x (- xc y) :y (+ yc x) :growable true}
-                       {:x (+ xc y) :y (- yc x) :growable true}
-                       {:x (- xc y) :y (- yc x) :growable true}))))
+  [xc yc x y cell]
+  (let [new-cell-pixels
+        (vec (set (vector {:x (+ xc x) :y (+ yc y) :growable true}
+                          {:x (- xc x) :y (+ yc y) :growable true}
+                          {:x (+ xc x) :y (- yc y) :growable true}
+                          {:x (- xc x) :y (- yc y) :growable true}
+                          {:x (+ xc y) :y (+ yc x) :growable true}
+                          {:x (- xc y) :y (+ yc x) :growable true}
+                          {:x (+ xc y) :y (- yc x) :growable true}
+                          {:x (- xc y) :y (- yc x) :growable true})))
+
+        colliding-pixels
+        (cellCollisionCheck (:number cell) new-cell-pixels (@cell-map :cells))
+        growable-pixels
+        (filterv #(not (some (fn [u] (= u %)) colliding-pixels)) new-cell-pixels)
+        total-cell-wall-pixels
+        (into (:cell-wall ((@cell-map :cells) (:number cell))) growable-pixels)
+        total-cell-pixels
+        (into (:pix ((@cell-map :cells) (:number cell))) growable-pixels)]
+    ;; (println "new cell" new-cell-pixels)
+    ;; (println "colliding" colliding-pixels)
+    ;; (println "growable" growable-pixels)
+    (swap! cell-map assoc-in [:cells (:number cell) :pix] total-cell-pixels)
+    (swap! cell-map assoc-in [:cells (:number cell) :cell-wall] total-cell-wall-pixels)))
 
 (defn growBres
   "second attempt to expand a cell by a single pixel"
-  [rad c]
-  (doseq [cell c]
-    (let [xc (:x (:center-pix cell)) yc (:y (:center-pix cell))
-          x (atom 0) y (atom rad) d (atom (- 3 (* 2 rad)))
-          i (atom 0)]
-      (collectCirclePixels xc yc @x @y cell)
-      (while (and (>= @y @x) (< @i 100))
-        (swap! x inc)
-        (if (> @d 0)
-          (do
-            (swap! y dec)
-            (reset! d (+ (+ @d (* 4 (- @x @y))) 10)))
-          (reset! d (+ (+ @d (* 4 @x)) 6)))
-        (collectCirclePixels xc yc @x @y cell)
-        (swap! i inc))))
-)
+  ;; [radius cell-collection]
+  [cell-collection]
+  (doseq [cell cell-collection]
+    ;; (doseq [r (range radius)]
+    ;; (println cell)
+    (let [growth-color (color (rand-int 255) (rand-int 255) (rand-int 255))]
+      (doseq [n (range (:growth-increment cell))]
+        (swap! cell-map assoc-in [:cells (:number cell) :cell-wall] [])
+        (let [xc (:x (:center-pix cell)) yc (:y (:center-pix cell))
+              r (:growth-counter cell)
+              x (atom 0) y (atom r) d (atom (- 3 (* 2 r)))
+              i (atom 0)]
+          (collectCirclePixels xc yc @x @y cell)
+          (swap! cell-map update-in [:cells (:number cell) :growth-counter] inc)
+          (while (and (>= @y @x) (< @i 10000))
+            (swap! x inc)
+            (if (> @d 0)
+              (do
+                (swap! y dec)
+                (reset! d (+ (+ @d (* 4 (- @x @y))) 10)))
+              (reset! d (+ (+ @d (* 4 @x)) 6)))
+            (collectCirclePixels xc yc @x @y cell)
+            (swap! i inc)))
+        (drawCells (:cells @cell-map) growth-color)))))
+
 ;; ----------- Square division functions ------------
 (defn drawVerticalLine
   "draws a single vertical line of a given length at a given point"
