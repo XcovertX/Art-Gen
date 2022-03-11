@@ -44,14 +44,20 @@
       (@cell-map :cell-count) 3 grow-inc grow-rate
       cell-center cell-center (vector (conj cell-center {:growable true}))))))
 
+(defn drawCell
+  "draws a given cell"
+  [cell cell-color]
+  (doseq [p (:cell-wall cell)]
+    (let [x (:x p) y (:y p) growable (:growable p)]
+      (if growable
+        (set-pixel x y cell-color)))))
+        
+
 (defn drawCells
   "draws a given collection of cells"
-  [cell-collection cell-color]
-  (doseq [c cell-collection]
-    (doseq [p (:cell-wall c)]
-      (let [x (:x p) y (:y p) growable (:growable p)]
-        ;; (println x y)
-        (set-pixel x y cell-color)))))
+  [cell-color]
+  (doseq [cell (:cells @cell-map)]
+    (drawCell cell cell-color)))
 
 (defn growCells
   "grows a given group of cells"
@@ -92,7 +98,7 @@
 
 (defn collectCirclePixels
   "retrieves the pixels from four quadrants of a circle"
-  [xc yc x y cell]
+  [xc yc x y cell-number]
   (let [new-cell-pixels
         (vec (set (vector {:x (+ xc x) :y (+ yc y) :growable true}
                           {:x (- xc x) :y (+ yc y) :growable true}
@@ -104,35 +110,37 @@
                           {:x (- xc y) :y (- yc x) :growable true})))
 
         colliding-pixels
-        (cellCollisionCheck (:number cell) new-cell-pixels (@cell-map :cells))
+        (cellCollisionCheck cell-number new-cell-pixels (@cell-map :cells))
         growable-pixels
         (filterv #(not (some (fn [u] (= u %)) colliding-pixels)) new-cell-pixels)
         total-cell-wall-pixels
-        (into (:cell-wall ((@cell-map :cells) (:number cell))) growable-pixels)
+        (into (:cell-wall ((@cell-map :cells) cell-number)) growable-pixels)
         total-cell-pixels
-        (into (:pix ((@cell-map :cells) (:number cell))) growable-pixels)]
+        (into (:pix ((@cell-map :cells) cell-number)) growable-pixels)]
     ;; (println "new cell" new-cell-pixels)
     ;; (println "colliding" colliding-pixels)
     ;; (println "growable" growable-pixels)
-    (swap! cell-map assoc-in [:cells (:number cell) :pix] total-cell-pixels)
-    (swap! cell-map assoc-in [:cells (:number cell) :cell-wall] total-cell-wall-pixels)))
+    (swap! cell-map assoc-in [:cells cell-number :pix] total-cell-pixels)
+    (swap! cell-map assoc-in [:cells cell-number :cell-wall] total-cell-wall-pixels)))
 
 (defn growBres
   "second attempt to expand a cell by a single pixel"
   ;; [radius cell-collection]
-  [cell-collection]
-  (doseq [cell cell-collection]
+  []
+  (doseq [cell (@cell-map :cells)]
     ;; (doseq [r (range radius)]
     ;; (println cell)
-    (let [growth-color (color (rand-int 255) (rand-int 255) (rand-int 255))]
+    (let [cell-number (:number cell)
+          growth-color (color (rand-int 255) (rand-int 255) (rand-int 255))]
       (doseq [n (range (:growth-increment cell))]
-        (swap! cell-map assoc-in [:cells (:number cell) :cell-wall] [])
-        (let [xc (:x (:center-pix cell)) yc (:y (:center-pix cell))
-              r (:growth-counter cell)
+        (swap! cell-map assoc-in [:cells cell-number :cell-wall] [])
+        (let [xc (:x (:center-pix ((@cell-map :cells) cell-number)))
+              yc (:y (:center-pix ((@cell-map :cells) cell-number)))
+              r (:growth-counter ((@cell-map :cells) cell-number))
               x (atom 0) y (atom r) d (atom (- 3 (* 2 r)))
               i (atom 0)]
-          (collectCirclePixels xc yc @x @y cell)
-          (swap! cell-map update-in [:cells (:number cell) :growth-counter] inc)
+          (collectCirclePixels xc yc @x @y cell-number)
+          (swap! cell-map update-in [:cells cell-number :growth-counter] inc)
           (while (and (>= @y @x) (< @i 10000))
             (swap! x inc)
             (if (> @d 0)
@@ -140,9 +148,9 @@
                 (swap! y dec)
                 (reset! d (+ (+ @d (* 4 (- @x @y))) 10)))
               (reset! d (+ (+ @d (* 4 @x)) 6)))
-            (collectCirclePixels xc yc @x @y cell)
-            (swap! i inc)))
-        (drawCells (:cells @cell-map) growth-color)))))
+            (collectCirclePixels xc yc @x @y cell-number)
+            (swap! i inc))
+          (drawCell ((@cell-map :cells) cell-number) growth-color))))))
 
 ;; ----------- Square division functions ------------
 (defn drawVerticalLine
