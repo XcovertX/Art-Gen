@@ -4,6 +4,7 @@
             [sketch.color :as colo]
             [sketch.hitomezashi :as hito]
             [sketch.divider :as divi]
+            [sketch.cell :as cell]
             [sketch.calculations :as cal])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
@@ -109,14 +110,14 @@
 
             ;;     (set-pixel x y (color aver-r aver-g aver-b))))))
 
-        (reset! divi/cell-map {:cell-count 0 :cells []})
+        (reset! cell/cell-map {:cell-count 0 :cells []})
         (doseq [i (range 1)]
-          (divi/buildCell {:x 100 :y 100} 8 1)
-          (divi/buildCell {:x 600 :y 570} 1 1))
+          (cell/buildCell {:x 100 :y 100} 8 1)
+          (cell/buildCell {:x 600 :y 570} 1 1))
         
         (doseq [i (range 30)]
           ;; (divi/drawCells (:cells @divi/cell-map) (color (rand-int 255) (rand-int 255) (rand-int 255)))
-          (divi/growBres))
+          (cell/growBres))
         ;; (doseq [x (range 5)]
         ;;   (divi/growCells (:cells @divi/cell-map))
         ;;   (divi/drawCells (:cells @divi/cell-map) (color 255 255 255)))
