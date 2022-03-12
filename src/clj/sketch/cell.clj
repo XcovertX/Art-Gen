@@ -40,7 +40,7 @@
 (defn drawCell
   "draws a given cell"
   [cell cell-color]
-  (doseq [p (:cell-wall cell)]
+  (doseq [p (:pix cell)]
     (let [x (:x p) y (:y p) growable (:growable p)]
       (if growable
         (set-pixel x y cell-color)))))
@@ -49,7 +49,7 @@
   "draws a given collection of cells"
   [cell-color]
   (doseq [cell (:cells @cell-map)]
-    (drawCell cell cell-color)))
+    (drawCell cell (color (rand-int 255) (rand-int 255) (rand-int 255)))))
 
 (defn growCells
   "grows a given group of cells"
@@ -72,20 +72,14 @@
   "verifies a cell's potential growth does not collide with another cell
    returns a collection containing any pixel that collides with another cell"
   [cell-number pixel-collection cell-collection]
-  (let [collided-pixels (atom {:wall [] :interior []})]
+  (let [collided-pixels (atom {})]
     (doseq [cell cell-collection]
       (if (not= (:number cell) cell-number)
         (let [cell-interior-pixels (:pix cell)]
           (doseq [pixel pixel-collection]
-            (let [ungrowable-pixel (update-in pixel [:growable] not)]
-              (if (.contains cell-interior-pixels ungrowable-pixel)
-                (let [cell-wall-pixels (:cell-wall cell)]
-                  (if (.contains cell-wall-pixels ungrowable-pixel)
-                    (swap! collided-pixels assoc-in [:wall]
-                           (conj (@collided-pixels :wall) ungrowable-pixel))))
-                (swap! collided-pixels assoc-in [:interior]
-                       (conj (@collided-pixels :interior) ungrowable-pixel))))))))
-    @collided-pixels ))
+            (if (.contains cell-interior-pixels pixel)
+              (swap! collided-pixels assoc-in [0] pixel))))))
+    @collided-pixels))
 
 
 
@@ -104,10 +98,8 @@
 
         colliding-pixels
         (cellCollisionCheck cell-number new-cell-pixels (@cell-map :cells))
-        
         growable-pixels
-        (filterv #(not (some (fn [u] (= u %)) 
-                             (update-in colliding-pixels [:growable] not))) new-cell-pixels)
+        (filterv #(not (some (fn [u] (= u %)) colliding-pixels)) new-cell-pixels)
         total-cell-wall-pixels
         (into (:cell-wall ((@cell-map :cells) cell-number)) growable-pixels)
         total-cell-pixels
@@ -123,9 +115,7 @@
     (let [cell-number (:number cell)
           growth-color (color (rand-int 255) (rand-int 255) (rand-int 255))]
       (doseq [n (range (:growth-increment cell))]
-        (swap! cell-map assoc-in [:cells cell-number :cell-wall]
-               (filterv (fn [u] (= (:growable u) false))
-                        (:cell-wall ((@cell-map :cells) cell-number))))
+        (swap! cell-map assoc-in [:cells cell-number :cell-wall] [])
         (let [xc (:x (:center-pix ((@cell-map :cells) cell-number)))
               yc (:y (:center-pix ((@cell-map :cells) cell-number)))
               r (:growth-counter ((@cell-map :cells) cell-number))

@@ -112,8 +112,14 @@
 
         (reset! cell/cell-map {:cell-count 0 :cells []})
         (doseq [i (range 1)]
-          (cell/buildCell {:x 100 :y 100 :growable true} 1 1)
-          (cell/buildCell {:x 110 :y 110 :growable true} 1 1))
+          (cell/buildCell {:x 100 :y 100 :growable true} 5 1)
+          (cell/buildCell {:x 110 :y 110 :growable true} 3 1)
+          (cell/buildCell {:x 90 :y 130 :growable true} 2 1)
+          (cell/buildCell {:x 160 :y 80 :growable true} 1 1)
+          (cell/buildCell {:x 30 :y 93 :growable true} 10 1)
+          (cell/buildCell {:x 41 :y 53 :growable true} 2 1)
+          (cell/buildCell {:x 10 :y 180 :growable true} 2 1))
+        
         (doseq [i (range 10)]
           (cell/growBres))
         (cell/drawCells (color 255 (rand-int 255) (rand-int 255)))))
