@@ -112,16 +112,11 @@
 
         (reset! cell/cell-map {:cell-count 0 :cells []})
         (doseq [i (range 1)]
-          (cell/buildCell {:x 100 :y 100} 8 1)
-          (cell/buildCell {:x 600 :y 570} 1 1))
-        
-        (doseq [i (range 30)]
-          ;; (divi/drawCells (:cells @divi/cell-map) (color (rand-int 255) (rand-int 255) (rand-int 255)))
+          (cell/buildCell {:x 100 :y 100 :growable true} 1 1)
+          (cell/buildCell {:x 110 :y 110 :growable true} 1 1))
+        (doseq [i (range 10)]
           (cell/growBres))
-        ;; (doseq [x (range 5)]
-        ;;   (divi/growCells (:cells @divi/cell-map))
-        ;;   (divi/drawCells (:cells @divi/cell-map) (color 255 255 255)))
-        ))
+        (cell/drawCells (color 255 (rand-int 255) (rand-int 255)))))
 
     (save (str "sketch-" img-num ".tif"))
     (let [filename (str "sketch-" img-num ".tif")
