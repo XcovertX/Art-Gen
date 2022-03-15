@@ -11,11 +11,12 @@
 
   (:import [processing.core PShape PGraphics]))
 
+;; -------- Cellular propagation functions ----------
+
 (def cell-map (atom {:cell-count 0 :cells []}))
 (defrecord Cell [number growth-counter growth-increment growth-rate
                  pix center-pix cell-wall])
 
-;; -------- Cellular propagation functions ----------
 (defn addCell
   "adds a cell to cell-map"
   [new-cell]
@@ -123,7 +124,7 @@
           (collectCirclePixels xc yc @x @y cell-number)
           (swap! cell-map update-in [:cells cell-number :growth-counter] inc)
           (while (>= @y @x)
-           (swap! x inc)
+            (swap! x inc)
             (if (> @d 0)
               (do
                 (swap! y dec)
