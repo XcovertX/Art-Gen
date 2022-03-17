@@ -2,7 +2,7 @@
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
             [sketch.calculations :as calc]
-            [sketch.growth-path :as path])
+            [sketch.r-tree :as tree])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -12,6 +12,9 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; ------------ Growth Tools -----------------
+
+(def tree (atom []))
+
 (def path-map (atom {:paths []}))
 (defrecord Path [nodes
                  settings
@@ -21,17 +24,18 @@
                  stroke-color])
 
 (def node-map (atom {:nodes [] :is-closed false}))
-(defrecord Node [x y is-fixed])
+;; (defrecord Node [x y is-fixed])
+(defrecord Data [is-fixed velocity next-position settings])
 
 (def default-settings (vector
-               :min-distance 1
-               :max-distance 5
-               :repultion-radius 10
-               :attraction-force 0.2
-               :repulsion-force 0.5
-               :allignment-force 0.45
-               :node-injection-interval 10
-               :brownian-motion-range 0.01))
+                       :min-distance 1
+                       :max-distance 5
+                       :repulsion-radius 10
+                       :attraction-force 0.2
+                       :repulsion-force 0.5
+                       :allignment-force 0.45
+                       :node-injection-interval 10
+                       :brownian-motion-range 0.01))
 
 (defn addPath
   "adds a given path to path-map"
@@ -52,9 +56,9 @@
 
 (defn prunePaths
   "removes paths that are too small"
-  []
+  [paths]
   (filter (fn [x]
-            (> (count (:nodes x)) 1)) (:paths @path-map)))
+            (> (count (:nodes x)) 1)) paths))
 
 (defn addNode
   "atomically adds a node to node-map"
@@ -70,19 +74,19 @@
 
 (defn getConnectedNodes
   "retrieves all nodes connected to a given node"
-  [index]
-  (let [length (count (@node-map :nodes))
-        previous-node (if (and (= index 0) (@node-map :is-closed))
-                        (get (@node-map :nodes) (- length 1))
+  [nodes index]
+  (let [length (count nodes)
+        previous-node (if (and (= index 0) (:isClosed nodes))
+                        (get nodes (- length 1))
                         (if (>= index 1)
-                          (get (@node-map :nodes) (- index 1))))
-        next-node (if (and (= index (- length 1)) (@node-map :is-closed))
-                    (get (@node-map :nodes) 0)
+                          (get nodes (- index 1))))
+        next-node (if (and (= index (- length 1)) (:is-closed nodes))
+                    (get nodes 0)
                     (if (<= index (- length 1))
-                      (get (@node-map :nodes) (+ index 1))))]
+                      (get nodes (+ index 1))))]
     (vector :prev previous-node :next next-node)))
 
-(defn getDistance 
+(defn getDistance
   [node-A node-B]
   (let [xa (:x node-A)
         ya (:y node-A)
@@ -90,7 +94,7 @@
         yb (:y node-B)]
     (sqrt (+ (* (- xa xb) (- xa xb)) (* (- ya yb) (- ya yb))))))
 
-(defn insert 
+(defn insert
   "inserts node into a specific index"
   [vec pos item]
   (apply conj (subvec vec 0 pos) item (subvec vec pos)))
@@ -107,24 +111,26 @@
   "searches for edges that are too long and splits them"
   [path]
   (let [new-path (atom path)]
-   (doseq [node (:nodes path)]
-    (let [index (.indexOf @new-path node)
-          length (count @new-path)
-          con-nodes (getConnectedNodes index)
-          prev-node (:prev con-nodes)
-          next-node (:next con-nodes)
-          distance (getDistance node prev-node)]
-      (if (and (not= next-node nil) (>= distance (:max-distance (:settings path))))
-        (let [midpoint-node (getMidpointNode node prev-node)]
-          (if (= index 0)
-            (swap! new-path (insert @new-path length midpoint-node))
-            (swap! new-path (insert @new-path index midpoint-node)))))))))
+    (doseq [node (:nodes path)]
+      (let [index (.indexOf @new-path node)
+            length (count @new-path)
+            connected-nodes (getConnectedNodes index (:nodes @new-path))
+            prev-node (:prev connected-nodes)
+            next-node (:next connected-nodes)
+            distance (getDistance node prev-node)]
+        (if (and (not= next-node nil) (>= distance (:max-distance (:settings path))))
+          (let [midpoint-node (getMidpointNode node prev-node)]
+            (if (= index 0)
+              (swap! new-path (insert @new-path length midpoint-node))
+              (swap! new-path (insert @new-path index midpoint-node)))))))
+    @new-path))
+
 
 
 (defn knn
   "nearest neighbor search"
   [x k data]
-  (let [cmp (fn [u v] (< (distance x u) (distance x v)))
+  (let [cmp (fn [u v] (< (getDistance x u) (getDistance x v)))
         rdr (fn [ys y] (take k (sort cmp (cons y ys))))]
     (->> (keys data)
          (reduce rdr [])
@@ -141,40 +147,49 @@
                           (/ (:brownian-motion-range default-settings) 2)))
         newy (+ y (random (- 0 (/ (:brownian-motion-range default-settings) 2))
                           (/ (:brownian-motion-range default-settings) 2)))]
-    (vector :x x :y y)))
+    (update-in node [:x :y] [newx newy])))
 
 (defn applyAttraction
-  "moves node closed to its connected nodes"
-  [index]
-  (let [connected-nodes (getConnectedNodes index)]
+  "moves node closer to its connected nodes"
+  [nodes index]
+  (let [node (index nodes)
+        connected-nodes (getConnectedNodes nodes index)]
     (if (and
-         (not= (connected-nodes :next) nil)
-         (not (:is-fixed (index (:nodes @node-map)))))
-      (let [distance (index (:nodes @node-map))
-
+         (not= (:next connected-nodes) nil)
+         (not (:is-fixed node)))
+      (let [distance (index nodes)
             least-min-distance (Math/min
-                                (:min-distance (index (:nodes @node-map)))
+                                (:min-distance node)
                                 (:min-distance (:prev connected-nodes)))]
         (if (> distance least-min-distance)
-          (let [x (lerp (:x (:next-pos (index (:nodes @node-map))))
+          (let [x (lerp (:x (:next-pos node))
                         (:x (:prev connected-nodes))
                         (:attraction-force default-settings))
-                y (lerp (:y (:next-pos (index (:nodes @node-map))))
+                y (lerp (:y (:next-pos node))
                         (:y (:prev connected-nodes))
-                        (:attraction-force default-settings))]
-            (vector :x x :y y)))))))
+                        (:attraction-force default-settings))
+                node (update-in node [:x] x)
+                node (update-in node [:y] y)]
+            node)
+          (node)))
+      (node))))
 
 (defn applyRepulsion
   ""
   [index r-tree]
   (let [x (:x (index (:nodes @node-map)))
-        y (:y (index (:nodes @node-map)))
-        ]))
+        y (:y (index (:nodes @node-map)))]))
 
-(defn iterate-tree
+(defn grow
   "iterates one whole step of the cell growth"
-  [r-tree]
-  (doseq [n (range (count (@node-map :nodes)))]
-    (let [index (.indexOf n)
-          bm-node (update-in n [:x :y] (applyBrownianMotion n))
-          attract-node (update-in (:next-pos bm-node) [:x :y] (applyAttraction index))])))
+  [path r-tree]
+  (let [new-path (atom path)]
+   (doseq [node path]
+     (swap! new-path assoc-in [:nodes node] (applyBrownianMotion node))
+     (swap! new-path assoc-in (applyAttraction path (.indexOf path node))))))
+
+
+(defn init-growth
+  "initializes growth"
+  []
+  )
