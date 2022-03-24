@@ -2,7 +2,7 @@
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
             [sketch.calculations :as calc]
-            [sketch.r-tree :as tree])
+            [sketch.r_tree :as rt])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -19,12 +19,9 @@
 (defrecord Path [nodes
                  settings
                  is-closed
-                 bounds
-                 fill-color
-                 stroke-color])
+                 bounds])
 
-(def node-map (atom {:nodes [] :is-closed false}))
-;; (defrecord Node [x y is-fixed])
+(def node-map (atom {:nodes []  }))
 (defrecord Data [is-fixed velocity next-position settings])
 
 (def default-settings (vector
@@ -35,7 +32,9 @@
                        :repulsion-force 0.5
                        :allignment-force 0.45
                        :node-injection-interval 10
-                       :brownian-motion-range 0.01))
+                       :brownian-motion-range 0.01
+                       :fill-color nil
+                       :stroke-color nil))
 
 (defn addPath
   "adds a given path to path-map"
@@ -50,9 +49,9 @@
 
 (defn buildPath
   "builds a path"
-  [nodes settings is-closed bounds fill-color stoke-color]
-  (Path.
-   nodes settings is-closed bounds fill-color stoke-color))
+  [nodes settings is-closed bounds]
+  (atom
+   (Path. nodes settings is-closed bounds)))
 
 (defn prunePaths
   "removes paths that are too small"
@@ -68,9 +67,9 @@
 (defn buildNode
   "constructs a new node"
   [x y]
-  (Node.
-   x y (:min-distance default-settings) (:repultion-radius default-settings)
-   false [:x nil :y nil]))
+  (rt/make-leaf
+   (rt/make-bounding-box x y x y)
+   (Data. false 0 [:x nil :y nil] default-settings)))
 
 (defn getConnectedNodes
   "retrieves all nodes connected to a given node"
@@ -104,8 +103,7 @@
   [node-A node-B]
   (let [newx (/ (+ (:x node-A) (:x node-B)) 2)
         newy (/ (+ (:y node-A) (:y node-B)) 2)]
-    (Node.
-     newx newy default-settings false)))
+    (buildNode newx newy)))
 
 (defn splitEdges
   "searches for edges that are too long and splits them"
@@ -125,19 +123,17 @@
               (swap! new-path (insert @new-path index midpoint-node)))))))
     @new-path))
 
-
-
-(defn knn
-  "nearest neighbor search"
-  [x k data]
-  (let [cmp (fn [u v] (< (getDistance x u) (getDistance x v)))
-        rdr (fn [ys y] (take k (sort cmp (cons y ys))))]
-    (->> (keys data)
-         (reduce rdr [])
-         (map data)
-         frequencies
-         (apply max-key val)
-         first)))
+;; (defn knn
+;;   "nearest neighbor search"
+;;   [x k data]
+;;   (let [cmp (fn [u v] (< (getDistance x u) (getDistance x v)))
+;;         rdr (fn [ys y] (take k (sort cmp (cons y ys))))]
+;;     (->> (keys data)
+;;          (reduce rdr [])
+;;          (map data)
+;;          frequencies
+;;          (apply max-key val)
+;;          first)))
 
 (defn applyBrownianMotion
   "simulates minor motion"
@@ -188,8 +184,27 @@
      (swap! new-path assoc-in [:nodes node] (applyBrownianMotion node))
      (swap! new-path assoc-in (applyAttraction path (.indexOf path node))))))
 
+(defn test-reduce
+  [paths]
+  (mapcat (fn [path]
+            (:nodes path))
+          paths))
 
 (defn init-growth
   "initializes growth"
   []
-  )
+  (let [
+        node-1 (buildNode 3 5)
+        node-2 (buildNode 10 27)
+        node-3 (buildNode 12 45)
+        node-4 (buildNode 110 227)
+        path-1 (buildPath
+              [node-1 node-2] default-settings false false)
+        path-2 (buildPath
+              [node-3 node-4] default-settings false false)
+
+        tree (rt/create {:max-children 10} [node-1 node-2])]
+    (swap! path-1 assoc-in [:nodes] [node-1 node-2])
+    (test-reduce [path-1 path-2])))
+
+

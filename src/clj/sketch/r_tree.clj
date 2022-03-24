@@ -1,4 +1,4 @@
-(ns sketch.r-tree
+(ns sketch.r_tree
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
             [sketch.calculations :as calc])
@@ -155,14 +155,14 @@
 
 (defn test-tree
   []
-  (let [nodes [{:x 1 :y 1 :z 100 :b 100 :data ["data1"]}
-               {:x 20 :y 11 :z 25 :b 16 :data ["data2"]}
-               {:x 3 :y 6 :z 1 :b 10 :data ["data3"]}
-               {:x 22 :y 400 :z 32 :b 144 :data ["data4"]}
-               {:x 9 :y 189 :z 69 :b 69 :data ["data5"]}
-               {:x 2 :y 20 :z 20 :b 30 :data ["data6"]}
-               {:x 3 :y 2 :z 4 :b 3 :data ["data7"]}
-               {:x 99 :y 99 :z 88 :b 88 :data ["data8"]}]
+  (let [nodes [{:x 1 :y 1 :z 1 :b 1 :data ["data1"]}
+               {:x 20 :y 11 :z 20 :b 11 :data ["data2"]}
+               {:x 3 :y 6 :z 3 :b 6 :data ["data3"]}
+               {:x 22 :y 400 :z 22 :b 400 :data ["data4"]}
+               {:x 9 :y 189 :z 9 :b 189 :data ["data5"]}
+               {:x 2 :y 20 :z 2 :b 20 :data ["data6"]}
+               {:x 3 :y 2 :z 3 :b 2 :data ["data7"]}
+               {:x 99 :y 99 :z 99 :b 99 :data ["data8"]}]
         xs (map :x nodes)
         ys (map :y nodes)
         zs (map :z nodes)
@@ -178,13 +178,12 @@
         b (vector (Node. {:x0 2, :y0 7, :x1 2, :y1 9} ["data6"] nil))
         bbox   (compute-bounding-box b)
         tree   (create {:max-children 4} nodes)
-        ds'    (search-intersection tree bbox)
-        ]
+        ds'    (search-intersection tree bbox)]
     (if (= (sort ds)
            (sort ds))
       "they are equal"
       "not all nodes were inserted")
-   (println "ds" ds')))
+   (println "tree" tree)))
 
 (defn growth-create
   [nodes]
