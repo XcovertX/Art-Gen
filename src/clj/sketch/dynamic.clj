@@ -16,10 +16,10 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 799)
-(def window-height 605)
+(def window-width 1920)
+(def window-height 1280)
 
-(def img-url "abstract-painting.jpg")
+(def img-url "source_images/eye.jpg")
 (def img (ref nil))
 
 (defn setup []
@@ -30,13 +30,13 @@
   ;; (color-mode :hsb 360 100 100 1.0)
   ;; (stroke-join :miter)
   ;; (stroke-cap :project)
-  (stroke 210 100 115)
+  (stroke 255 255 255)
   (stroke-weight 3)
 
-  (doseq [img-num (range 2)] ;; picks how many pictures to make
+  (doseq [img-num (range 5)] ;; picks how many pictures to make
 
     (background 0 0 0)
-    ;; (image @img 0 0)
+    (image @img 0 0)
 
     ;; do drawing here
 
@@ -45,6 +45,19 @@
 
     (if (> img-num 0)
       (doseq [x (range 1)]
+        (reset! divi/square-map {:square-count 0 :squares []})
+        (divi/divideGoldenRectangles 0 0 window-width window-height 0 13)
+        (doseq [sqr (@divi/square-map :squares)]
+          (let [p (:pix sqr)
+                r (colo/calculateAverageColor p :r)
+                g (colo/calculateAverageColor p :g)
+                b (colo/calculateAverageColor p :b)]
+            (doseq [coord p]
+              (let [rgb (first (colo/getPixelColors (vector coord)))
+                    x (:x coord)
+                    y (:y coord)]
+
+                (set-pixel x y (color r g b))))))
         ;; (reset! divi/triangle-map {:triangle-count 0 :triangles []})
         ;; (divi/buildTriangles 13)
         ;; (doseq [tri (@divi/triangle-map :triangles)]
@@ -110,19 +123,21 @@
 
             ;;     (set-pixel x y (color aver-r aver-g aver-b))))))
 
-        (reset! cell/cell-map {:cell-count 0 :cells []})
-        (doseq [i (range 1)]
-          (cell/buildCell {:x 100 :y 100 :growable true} 5 1)
-          (cell/buildCell {:x 110 :y 110 :growable true} 3 1)
-          (cell/buildCell {:x 90 :y 130 :growable true} 2 1)
-          (cell/buildCell {:x 160 :y 80 :growable true} 1 1)
-          (cell/buildCell {:x 30 :y 93 :growable true} 10 1)
-          (cell/buildCell {:x 41 :y 53 :growable true} 2 1)
-          (cell/buildCell {:x 10 :y 180 :growable true} 2 1))
+        ;; (reset! cell/cell-map {:cell-count 0 :cells []})
+        ;; (doseq [i (range 1)]
+        ;;   (cell/buildCell {:x 100 :y 100 :growable true} 5 1)
+        ;;   (cell/buildCell {:x 110 :y 110 :growable true} 3 1)
+        ;;   (cell/buildCell {:x 90 :y 130 :growable true} 2 1)
+        ;;   (cell/buildCell {:x 160 :y 80 :growable true} 1 1)
+        ;;   (cell/buildCell {:x 30 :y 93 :growable true} 10 1)
+        ;;   (cell/buildCell {:x 41 :y 53 :growable true} 2 1)
+        ;;   (cell/buildCell {:x 10 :y 180 :growable true} 2 1))
         
-        (doseq [i (range 10)]
-          (cell/growBres))
-        (cell/drawCells (color 255 (rand-int 255) (rand-int 255)))))
+        ;; (doseq [i (range 10)]
+        ;;   (cell/growBres))
+        ;; (cell/drawCells (color 255 (rand-int 255) (rand-int 255)))
+        
+        ))
 
     (save (str "sketch-" img-num ".tif"))
     (let [filename (str "sketch-" img-num ".tif")

@@ -38,6 +38,7 @@
       (if (> num 0)
         num
         1)))))
+
 (defn fillShape
   "colors the entire shape with a given color"
   [shape c]

@@ -133,12 +133,12 @@
         y1 y
         x2 width
         y2 height
-        rand1 (random 100)
-        rand2 (random 100)
+        rand1 (rand-int 1000)
+        rand2 (rand-int 1618)
         goldenWidth (+ (calc/calculateGoldenRatio (- x2 x1)) x1)
         goldenHeight (+ (calc/calculateGoldenRatio (- y2 y1)) y1)]
     (if (< depth desiredDepth)
-      (if (even? depth)
+      (if (even? rand1)
         (do
           (if (> rand1 (/ (* depth depth) 2))
             (divideGoldenRectangles goldenWidth y1 x2 y2 (inc depth) desiredDepth)
@@ -151,8 +151,7 @@
             (addSquare
              (Square.
               (@square-map :square-count) depth x1 y1 x2 y2
-              (getSquarePixels x1 y1 x2 y2))))
-          (drawVerticalLine goldenWidth {:start y1 :end y2}))
+              (getSquarePixels x1 y1 x2 y2)))))
         (do
           (if (> rand1 (/ (* depth depth) 2))
             (divideGoldenRectangles x1 goldenHeight x2 y2 (inc depth) desiredDepth)
@@ -165,16 +164,11 @@
             (addSquare
              (Square.
               (@square-map :square-count) depth x1 y1 x2 y2
-              (getSquarePixels x1 y1 x2 y2))))
-          (drawHorizontalLine goldenHeight {:start x1 :end x2})))
-      (do
-        (if (even? depth)
-          (drawHorizontalLine goldenHeight {:start x1 :end x2})
-          (drawVerticalLine goldenWidth {:start y1 :end y2}))
-        (addSquare
-         (Square.
-          (@square-map :square-count) depth x1 y1 x2 y2
-          (getSquarePixels x1 y1 x2 y2)))))))
+              (getSquarePixels x1 y1 x2 y2))))))
+      (addSquare
+       (Square.
+        (@square-map :square-count) depth x1 y1 x2 y2
+        (getSquarePixels x1 y1 x2 y2))))))
 
 ;; ----------- triangle division functions ------------
 
