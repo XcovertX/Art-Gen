@@ -22,6 +22,15 @@ In the following example outputs, I experimented with inputting an image, recurs
 
 ![recursive-triangle-map-6](https://user-images.githubusercontent.com/86869080/159984568-7423cbf2-dd0b-4097-8b7c-027f268d611a.jpg)
 
+## Rectangle Mapping
+
+This tool works just like triangle mapping, albeit, it's a bit more straightforward and it uses the golden ratio to determine division points. Here are a few examples:
+
+![rectangle-mapping-3](https://user-images.githubusercontent.com/86869080/160030667-6ab1a5b4-7512-4c44-b58f-f3ab35f9033b.jpg)
+
+![rectangle-mapping-5](https://user-images.githubusercontent.com/86869080/160030704-28fc43e9-026f-4f70-aebf-aafed610fab5.jpg)
+
+![rectangle-mapping-6](https://user-images.githubusercontent.com/86869080/160048646-60d0ee1f-74a5-4a05-944c-c3dce7648a99.jpg)
 
 ## Usage
 
