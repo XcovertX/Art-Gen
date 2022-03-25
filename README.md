@@ -1,6 +1,8 @@
 # Art-Gen
 
-As a new developer and lover of art, I decided to develop a generative art program to explore the depths of procedural art as well as sharpen my newbie developer skills. I chose to write this in Clojure for a few reasons. First, very little boilerplate was required to get started. This was ideal for experimentation and development of generative art tools. Likewise, the Quil library is lightweight and easy to implement and utilize. Second, I wanted to experiment with functional programming and immutable data structures. Designing the program this way should make multithreading and concurrency easier to tackle.  
+As a new developer and lover of art, I decided to develop a generative art program to explore the depths of procedural art as well as sharpen my newbie dev skills. Art-Gen (when finished) will be a collection of generative tools that will ultimately be controlled by a bot to regularly formulate new works of art, post them to social media, and prioritize sequences that receive positive feedback. 
+
+I chose to write this in Clojure for a few reasons. First, very little boilerplate was required to get started. This was ideal for experimentation and development of generative art tools. Likewise, the Quil library is lightweight and easy to implement and utilize. Second, I wanted to experiment with functional programming and immutable data structures. Designing the program this way should make multithreading and concurrency easier to tackle. 
 
 This project is nowhere close to being done given that I have only worked on it during school breaks, however, I have managed to put together a handful of interesting tools for generative art. Here are some of the results: 
 
@@ -31,6 +33,18 @@ This tool works just like triangle mapping, albeit, it's a bit more straightforw
 ![rectangle-mapping-5](https://user-images.githubusercontent.com/86869080/160030704-28fc43e9-026f-4f70-aebf-aafed610fab5.jpg)
 
 ![rectangle-mapping-6](https://user-images.githubusercontent.com/86869080/160048646-60d0ee1f-74a5-4a05-944c-c3dce7648a99.jpg)
+
+## Hitomezashi Stitch
+
+After watching this Numberphile video: https://www.youtube.com/watch?v=JbfhzlMk2eY I thought it would be a cool tool for my Art-Gen bot to have and incorporate in different works:
+
+![hitomezashi-stitch](https://user-images.githubusercontent.com/86869080/160074941-4d5fdb2c-acc1-47ee-b9b3-4fffd6ba3536.jpg)
+
+![projection line cap](https://user-images.githubusercontent.com/86869080/160075093-077de1e7-3a18-4630-8dab-061a21c0017a.jpg)
+
+## Future
+
+Currently, I am working on an algorithm that will utilize differential growth to fill voids with 'organic' 2-d structures.
 
 ## Usage
 
