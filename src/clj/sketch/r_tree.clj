@@ -82,7 +82,7 @@
 (defn- top-down
   "top-down implements top-down bulk-load algorithm. It returns the root node of a subtree."
   [level m nodes]
-  (println (count nodes) m)
+  (println "topdown" (count nodes) m)
   (if (<= (count nodes) m)
     (make-branch nodes)
     (split level m nodes)))
@@ -97,7 +97,7 @@
 
 (defn- -search-intersection
   [tree box]
-  (println "search2")
+  (println "search2" box) 
   (if (intersects? box (:bounding-box tree))
     (cons (:data tree)
           (mapcat #(-search-intersection % box) (:children tree)))))

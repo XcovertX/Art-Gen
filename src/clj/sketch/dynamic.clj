@@ -17,8 +17,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 799)
-(def window-height 604)
+(def window-width 900)
+(def window-height 900)
 
 (def img-url "abstract-painting.jpg")
 (def img (ref nil))
@@ -27,21 +27,25 @@
   ;; (dosync (ref-set img (load-image img-url)))
   (stroke 210 100 115)
   (stroke-weight 3)
-  (background 0 0 0)
-  (reset! grow/path-map {:paths []})
-  (reset! grow/node-map {:nodes []})
+  (background 0 0 0))
 
-  (let [node-A (grow/buildNode 0 (/ window-height 2))
-        node-B (grow/buildNode window-width (/ window-height 2))]
-    (grow/addNode node-A)
-    (grow/addNode node-B)))
+(defn drawTree
+  [tree]
+  (doseq [t tree]
+    (let [bb (:bounding-box t)
+          x0 (:x0 bb)
+          y0 (:y0 bb)
+          x1 (:x1 bb)
+          y1 (:y1 bb)]
+      (println "coords:" x0 y0 x1 y1)
+      (rect x0 y0 x1 y1)
+      (if (not (nil? (:children t)))
+        (drawTree (:children t))))))
 
 (defn draw []
-  (let [x1 (:x (get (@grow/node-map :nodes) 0))
-        y1 (:y (get (@grow/node-map :nodes) 0))
-        x2 (:x (get (@grow/node-map :nodes) 1))
-        y2 (:y (get (@grow/node-map :nodes) 1))]
-    (line x1 y1 x2 y2)))
+  (no-loop)
+  (let [tree (vector (grow/init-growth))]
+    (drawTree tree)))
 
 
 

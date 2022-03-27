@@ -1,8 +1,7 @@
 (ns sketch.grow
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.calculations :as calc]
-            [sketch.r_tree :as rt])
+            [sketch.calculations :as calc])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -21,7 +20,8 @@
                  is-closed
                  bounds])
 
-(def node-map (atom {:nodes []  }))
+(def node-map (atom {:nodes [] }))
+(defrecord Node [pos settings data])
 (defrecord Data [is-fixed velocity next-position settings])
 
 (def default-settings (vector
@@ -64,12 +64,18 @@
   [node]
   (swap! node-map assoc-in [:nodes] (conj (@node-map :nodes) node)))
 
+;; (defn buildNode
+;;   "constructs a new node"
+;;   [x y]
+;;   (rt/make-leaf
+;;    (rt/make-bounding-box x y x y)
+;;    (Data. false 0 [:x x :y y] default-settings)))
+
 (defn buildNode
   "constructs a new node"
   [x y]
-  (rt/make-leaf
-   (rt/make-bounding-box x y x y)
-   (Data. false 0 [:x nil :y nil] default-settings)))
+  (Node. [x y] default-settings
+         (Data. false 0 [:x nil :y nil] default-settings)))
 
 (defn getConnectedNodes
   "retrieves all nodes connected to a given node"
@@ -186,25 +192,107 @@
 
 (defn test-reduce
   [paths]
-  (mapcat (fn [path]
-            (:nodes path))
-          paths))
+  (vec
+   (mapcat (fn [path]
+             (:nodes path))
+           paths)))
+
+(defn euclidean-distance
+  [vec1 vec2]
+  (Math/sqrt
+   (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
+
+(defn nearest-neighbors
+  [samples query k]
+  (take k
+        (sort-by :score
+                 (map
+                  #(assoc % :score (euclidean-distance query (:pos %)))
+                  samples))))
+
+(defn knn
+  [samples query k]
+  (let [votes (nearest-neighbors samples query k)
+        vote-freq (frequencies (map :class votes))]
+    (key (apply max-key val vote-freq))))
+
+(defn radiusKNN
+  [nodes query radius]
+  (map
+   #(knn % query radius)
+   nodes))
+
+(defn reduceToSquare
+  [nodes query radius]
+  (let [negX (- (nth query 0) radius)
+        negY (- (nth query 1) radius)
+        posX (+ (nth query 0) radius)
+        posY (+ (nth query 1) radius)]
+    (filter
+     #(and (>= (nth (:pos %) 0) negX)
+           (>= (nth (:pos %) 1) negY)
+           (<= (nth (:pos %) 0) posX)
+           (<= (nth (:pos %) 1) posY))
+     nodes)))
+
+(defn reduceToSquare2
+  [paths query radius]
+  (map
+   (fn [path] (let [negX (- (nth query 0) radius)
+                    negY (- (nth query 1) radius)
+                    posX (+ (nth query 0) radius)
+                    posY (+ (nth query 1) radius)]
+                (filter
+                 #(and (>= (nth (:pos %) 0) negX)
+                       (>= (nth (:pos %) 1) negY)
+                       (<= (nth (:pos %) 0) posX)
+                       (<= (nth (:pos %) 1) posY))
+                 (:nodes @path))))
+   paths))
+
+(def training-set
+  [{:pos [5  5] :class "a"}
+   {:pos [5  4] :class "b"}
+   {:pos [5  3] :class "c"}
+   {:pos [5  2] :class "d"}
+   {:pos [7  1] :class "e"}
+   {:pos [5  0] :class "f"}
+   {:pos [5 -1] :class "g"}
+   {:pos [5 -2] :class "h"}
+   {:pos [5 -3] :class "i"}
+   {:pos [5 -4] :class "j"}])
+
+(def training-set-2
+  (let [paths (vector (buildPath [(buildNode 7 2)
+                                  (buildNode 3 1)
+                                  (buildNode 50 13)]
+                                 "settings" false "bounds")
+                      (buildPath [(buildNode 7 3)
+                                  (buildNode 6 1)
+                                  (buildNode 5 2)]
+                                 "settings" false "bounds"))]
+    paths))
+
+(defn testKNN
+  []
+  (let [query [5 0]
+        k 1]
+    (println query "-" (knn training-set query k))))
 
 (defn init-growth
   "initializes growth"
   []
-  (let [
-        node-1 (buildNode 3 5)
-        node-2 (buildNode 10 27)
-        node-3 (buildNode 12 45)
+  (let [node-1 (buildNode 30 302)
+        node-2 (buildNode 200 270)
+        node-3 (buildNode 120 45)
         node-4 (buildNode 110 227)
         path-1 (buildPath
-              [node-1 node-2] default-settings false false)
+                [node-1 node-2] default-settings false false)
         path-2 (buildPath
-              [node-3 node-4] default-settings false false)
+                [node-3 node-4] default-settings false false)
+        tree (rt/create {:max-children 10} (test-reduce [@path-1 @path-2]))]
+    tree))
 
-        tree (rt/create {:max-children 10} [node-1 node-2])]
-    (swap! path-1 assoc-in [:nodes] [node-1 node-2])
-    (test-reduce [path-1 path-2])))
+
 
 
