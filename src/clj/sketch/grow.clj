@@ -203,45 +203,26 @@
    (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
 
 (defn nearest-neighbors
-  [samples query k]
+  [nodes query k]
   (take k
         (sort-by :score
                  (map
-                  #(assoc % :score (euclidean-distance query (:pos %)))
-                  samples))))
+                  #(assoc % :score (euclidean-distance (:pos query) (:pos %)))
+                  nodes))))
 
 (defn knn
-  [samples query k]
-  (let [votes (nearest-neighbors samples query k)
+  [nodes query k]
+  (let [votes (nearest-neighbors nodes query k)
         vote-freq (frequencies (map :class votes))]
     (key (apply max-key val vote-freq))))
 
-(defn radiusKNN
-  [nodes query radius]
-  (map
-   #(knn % query radius)
-   nodes))
-
-(defn reduceToSquare
-  [nodes query radius]
-  (let [negX (- (nth query 0) radius)
-        negY (- (nth query 1) radius)
-        posX (+ (nth query 0) radius)
-        posY (+ (nth query 1) radius)]
-    (filter
-     #(and (>= (nth (:pos %) 0) negX)
-           (>= (nth (:pos %) 1) negY)
-           (<= (nth (:pos %) 0) posX)
-           (<= (nth (:pos %) 1) posY))
-     nodes)))
-
-(defn reduceToSquare2
+(defn cropNodes
   [paths query radius]
   (map
-   (fn [path] (let [negX (- (nth query 0) radius)
-                    negY (- (nth query 1) radius)
-                    posX (+ (nth query 0) radius)
-                    posY (+ (nth query 1) radius)]
+   (fn [path] (let [negX (- (nth (:pos query) 0) radius)
+                    negY (- (nth (:pos query) 1) radius)
+                    posX (+ (nth (:pos query) 0) radius)
+                    posY (+ (nth (:pos query) 1) radius)]
                 (filter
                  #(and (>= (nth (:pos %) 0) negX)
                        (>= (nth (:pos %) 1) negY)
@@ -249,6 +230,13 @@
                        (<= (nth (:pos %) 1) posY))
                  (:nodes @path))))
    paths))
+
+(defn radiusNN
+  [paths query radius]
+  (let [nodes (cropNodes paths query radius)]
+    (map
+     #(nearest-neighbors % query radius)
+     nodes)))
 
 (def training-set
   [{:pos [5  5] :class "a"}
@@ -289,9 +277,8 @@
         path-1 (buildPath
                 [node-1 node-2] default-settings false false)
         path-2 (buildPath
-                [node-3 node-4] default-settings false false)
-        tree (rt/create {:max-children 10} (test-reduce [@path-1 @path-2]))]
-    tree))
+                [node-3 node-4] default-settings false false)]
+    (radiusNN training-set-2 (buildNode 7 2) 1)))
 
 
 
