@@ -29,23 +29,9 @@
   (stroke-weight 3)
   (background 0 0 0))
 
-(defn drawTree
-  [tree]
-  (doseq [t tree]
-    (let [bb (:bounding-box t)
-          x0 (:x0 bb)
-          y0 (:y0 bb)
-          x1 (:x1 bb)
-          y1 (:y1 bb)]
-      (println "coords:" x0 y0 x1 y1)
-      (rect x0 y0 x1 y1)
-      (if (not (nil? (:children t)))
-        (drawTree (:children t))))))
-
 (defn draw []
-  (no-loop)
-  (let [tree (vector (grow/init-growth))]
-    (drawTree tree)))
+ (no-loop)
+ (grow/init-growth))
 
 
 

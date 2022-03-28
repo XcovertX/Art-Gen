@@ -24,7 +24,7 @@
 (defrecord Node [pos settings data])
 (defrecord Data [is-fixed velocity next-position settings])
 
-(def default-settings (vector
+(def default-settings (hash-map
                        :min-distance 1
                        :max-distance 5
                        :repulsion-radius 10
@@ -63,13 +63,6 @@
   "atomically adds a node to node-map"
   [node]
   (swap! node-map assoc-in [:nodes] (conj (@node-map :nodes) node)))
-
-;; (defn buildNode
-;;   "constructs a new node"
-;;   [x y]
-;;   (rt/make-leaf
-;;    (rt/make-bounding-box x y x y)
-;;    (Data. false 0 [:x x :y y] default-settings)))
 
 (defn buildNode
   "constructs a new node"
@@ -129,27 +122,15 @@
               (swap! new-path (insert @new-path index midpoint-node)))))))
     @new-path))
 
-;; (defn knn
-;;   "nearest neighbor search"
-;;   [x k data]
-;;   (let [cmp (fn [u v] (< (getDistance x u) (getDistance x v)))
-;;         rdr (fn [ys y] (take k (sort cmp (cons y ys))))]
-;;     (->> (keys data)
-;;          (reduce rdr [])
-;;          (map data)
-;;          frequencies
-;;          (apply max-key val)
-;;          first)))
-
 (defn applyBrownianMotion
   "simulates minor motion"
   [node]
-  (let [x (:x node) y (:y node)
-        newx (+ x (random (- 0 (/ (:brownian-motion-range default-settings) 2))
-                          (/ (:brownian-motion-range default-settings) 2)))
-        newy (+ y (random (- 0 (/ (:brownian-motion-range default-settings) 2))
-                          (/ (:brownian-motion-range default-settings) 2)))]
-    (update-in node [:x :y] [newx newy])))
+  (let [x (get (:pos node) 0) y (get (:pos node) 1)
+        newx (+ x (random (- 0 (/ ((:settings node) :brownian-motion-range) 2))
+                          (/ ((:settings node) :brownian-motion-range) 2)))
+        newy (+ y (random (- 0 (/ ((:settings node) :brownian-motion-range) 2))
+                          (/ ((:settings node ) :brownian-motion-range) 2)))]
+    (assoc node :pos [newx newy])))
 
 (defn applyAttraction
   "moves node closer to its connected nodes"
@@ -184,7 +165,7 @@
 
 (defn grow
   "iterates one whole step of the cell growth"
-  [path r-tree]
+  [path]
   (let [new-path (atom path)]
    (doseq [node path]
      (swap! new-path assoc-in [:nodes node] (applyBrownianMotion node))
@@ -203,11 +184,11 @@
    (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
 
 (defn nearest-neighbors
-  [nodes query k]
-  (take k
-        (sort-by :score
+  [nodes query radius]
+  (take radius
+        (sort-by :distance
                  (map
-                  #(assoc % :score (euclidean-distance (:pos query) (:pos %)))
+                  #(assoc % :distance (euclidean-distance (:pos query) (:pos %)))
                   nodes))))
 
 (defn knn
@@ -278,8 +259,16 @@
                 [node-1 node-2] default-settings false false)
         path-2 (buildPath
                 [node-3 node-4] default-settings false false)]
-    (radiusNN training-set-2 (buildNode 7 2) 1)))
+    (println (applyBrownianMotion node-1))))
 
+(defn createLine
+  "creates a node list containg 2 nodes"
+  [pos1 pos2]
+  (list
+   (buildNode (get pos1 0) (get pos1 1))
+   (buildNode (get pos2 0) (get pos2 1))))
 
-
-
+(defn addLinePath
+  [pos1 pos2]
+  (addPath
+   (buildPath (createLine pos1 pos2) default-settings false nil)))
