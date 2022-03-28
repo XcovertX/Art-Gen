@@ -82,7 +82,7 @@
                     (get nodes 0)
                     (if (<= index (- length 1))
                       (get nodes (+ index 1))))]
-    (vector :prev previous-node :next next-node)))
+    {:prev previous-node :next next-node}))
 
 (defn getDistance
   [node-A node-B]
@@ -135,27 +135,46 @@
 (defn applyAttraction
   "moves node closer to its connected nodes"
   [nodes index]
-  (let [node (index nodes)
+  (let [node (get nodes index)
         connected-nodes (getConnectedNodes nodes index)]
+    
+    ;; move towards next positions if exists
     (if (and
          (not= (:next connected-nodes) nil)
          (not (:is-fixed node)))
-      (let [distance (index nodes)
+      (let [distance (get nodes index)
+            least-min-distance (Math/min
+                                (:min-distance node)
+                                (:min-distance (:next connected-nodes)))]
+        (if (> distance least-min-distance)
+          (let [x (lerp (get (:pos (:next-position node)) 0)
+                        (get (:pos (:next connected-nodes)) 0)
+                        (:attraction-force (:settings node)))
+                y (lerp (get (:pos (:next-position node)) 1)
+                        (get (:pos (:next connected-nodes)) 1)
+                        (:attraction-force (:settings node)))
+                node (update-in node [:data :next-position :x] x)
+                node (update-in node [:data :next-position :y] y)]
+            node))))
+    
+    ;; move towards previos position if exists
+    (if (and
+         (not= (:prev connected-nodes) nil)
+         (not (:is-fixed node)))
+      (let [distance (get nodes index)
             least-min-distance (Math/min
                                 (:min-distance node)
                                 (:min-distance (:prev connected-nodes)))]
         (if (> distance least-min-distance)
-          (let [x (lerp (:x (:next-pos node))
-                        (:x (:prev connected-nodes))
-                        (:attraction-force default-settings))
-                y (lerp (:y (:next-pos node))
-                        (:y (:prev connected-nodes))
-                        (:attraction-force default-settings))
-                node (update-in node [:x] x)
-                node (update-in node [:y] y)]
-            node)
-          (node)))
-      (node))))
+          (let [x (lerp (get (:pos (:next-position node)) 0)
+                        (get (:pos (:prev connected-nodes)) 0)
+                        (:attraction-force (:settings node)))
+                y (lerp (get (:pos (:next-position node)) 1)
+                        (get (:pos (:prev connected-nodes)) 1)
+                        (:attraction-force (:settings node)))
+                node (update-in node [:data :next-position :x] x)
+                node (update-in node [:data :next-position :y] y)]
+            node))))))
 
 (defn applyRepulsion
   ""
@@ -248,19 +267,6 @@
         k 1]
     (println query "-" (knn training-set query k))))
 
-(defn init-growth
-  "initializes growth"
-  []
-  (let [node-1 (buildNode 30 302)
-        node-2 (buildNode 200 270)
-        node-3 (buildNode 120 45)
-        node-4 (buildNode 110 227)
-        path-1 (buildPath
-                [node-1 node-2] default-settings false false)
-        path-2 (buildPath
-                [node-3 node-4] default-settings false false)]
-    (println (applyBrownianMotion node-1))))
-
 (defn createLine
   "creates a node list containg 2 nodes"
   [pos1 pos2]
@@ -272,3 +278,11 @@
   [pos1 pos2]
   (addPath
    (buildPath (createLine pos1 pos2) default-settings false nil)))
+
+(defn init-growth
+  "initializes growth"
+  []
+  (let [paths training-set-2
+        path (get paths 0)
+        nodes (:nodes @path)]
+    (applyAttraction nodes 0)))
