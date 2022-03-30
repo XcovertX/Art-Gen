@@ -68,7 +68,7 @@
   "constructs a new node"
   [x y]
   (Node. [x y] default-settings
-         (Data. false 0 [:x nil :y nil] default-settings)))
+         (Data. false 0 {:x x :y y} default-settings)))
 
 (defn getConnectedNodes
   "retrieves all nodes connected to a given node"
@@ -86,10 +86,10 @@
 
 (defn getDistance
   [node-A node-B]
-  (let [xa (:x node-A)
-        ya (:y node-A)
-        xb (:x node-B)
-        yb (:y node-B)]
+  (let [xa (get (:pos node-A) 0)
+        ya (get (:pos node-A) 1)
+        xb (get (:pos node-B) 0)
+        yb (get (:pos node-B) 1)]
     (sqrt (+ (* (- xa xb) (- xa xb)) (* (- ya yb) (- ya yb))))))
 
 (defn insert
@@ -136,45 +136,47 @@
   "moves node closer to its connected nodes"
   [nodes index]
   (let [node (get nodes index)
-        connected-nodes (getConnectedNodes nodes index)]
-    
-    ;; move towards next positions if exists
-    (if (and
-         (not= (:next connected-nodes) nil)
-         (not (:is-fixed node)))
-      (let [distance (get nodes index)
-            least-min-distance (Math/min
-                                (:min-distance node)
-                                (:min-distance (:next connected-nodes)))]
-        (if (> distance least-min-distance)
-          (let [x (lerp (get (:pos (:next-position node)) 0)
-                        (get (:pos (:next connected-nodes)) 0)
-                        (:attraction-force (:settings node)))
-                y (lerp (get (:pos (:next-position node)) 1)
-                        (get (:pos (:next connected-nodes)) 1)
-                        (:attraction-force (:settings node)))
-                node (update-in node [:data :next-position :x] x)
-                node (update-in node [:data :next-position :y] y)]
-            node))))
-    
-    ;; move towards previos position if exists
-    (if (and
-         (not= (:prev connected-nodes) nil)
-         (not (:is-fixed node)))
-      (let [distance (get nodes index)
-            least-min-distance (Math/min
-                                (:min-distance node)
-                                (:min-distance (:prev connected-nodes)))]
-        (if (> distance least-min-distance)
-          (let [x (lerp (get (:pos (:next-position node)) 0)
-                        (get (:pos (:prev connected-nodes)) 0)
-                        (:attraction-force (:settings node)))
-                y (lerp (get (:pos (:next-position node)) 1)
-                        (get (:pos (:prev connected-nodes)) 1)
-                        (:attraction-force (:settings node)))
-                node (update-in node [:data :next-position :x] x)
-                node (update-in node [:data :next-position :y] y)]
-            node))))))
+        connected-nodes (getConnectedNodes nodes index)
+            ;; move towards next positions if exists
+        node (if (and
+                  (not= (:next connected-nodes) nil)
+                  (not (:is-fixed node)))
+               (let [distance (getDistance (get nodes index) (:next connected-nodes))
+                     least-min-distance (Math/min
+                                         (:min-distance (:settings (:data node)))
+                                         (:min-distance (:settings (:data (:next connected-nodes)))))]
+                 (if (> distance least-min-distance)
+                   (let [x (lerp (:x (:next-position (:data node)))
+                                 (get (:pos (:next connected-nodes)) 0)
+                                 (:attraction-force (:settings (:data node))))
+                         y (lerp (:y (:next-position (:data node)))
+                                 (get (:pos (:next connected-nodes)) 1)
+                                 (:attraction-force (:settings (:data node))))
+                         node (update-in node [:data :next-position] assoc :x x)
+                         node (update-in node [:data :next-position] assoc :y y)]
+                     node)))
+               node)
+
+    ;; move towards previous position if exists
+        node (if (and
+                  (not= (:prev connected-nodes) nil)
+                  (not (:is-fixed node)))
+               (let [distance (getDistance (get nodes index) (:prev connected-nodes))
+                     least-min-distance (Math/min
+                                         (:min-distance (:settings (:data node)))
+                                         (:min-distance (:settings (:data (:prev connected-nodes)))))]
+                 (if (> distance least-min-distance)
+                   (let [x (lerp (:x (:next-position (:data node)))
+                                 (get (:pos (:prev connected-nodes)) 0)
+                                 (:attraction-force (:settings (:data node))))
+                         y (lerp (:y (:next-position (:data node)))
+                                 (get (:pos (:prev connected-nodes)) 1)
+                                 (:attraction-force (:settings (:data node))))
+                         node (update-in node [:data :next-position] assoc :x x)
+                         node (update-in node [:data :next-position] assoc :y y)]
+                     node)))
+               node)]
+    node))
 
 (defn applyRepulsion
   ""
@@ -283,6 +285,7 @@
   "initializes growth"
   []
   (let [paths training-set-2
-        path (get paths 0)
-        nodes (:nodes @path)]
+        path @(get paths 0)
+        nodes (:nodes path)
+        ]
     (applyAttraction nodes 0)))
