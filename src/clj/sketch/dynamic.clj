@@ -40,11 +40,13 @@
       (do
         (println "counter:" @counter)
         (swap! p assoc-in [:paths] (grow/init-growth))
-        (println (:paths @p)))
+        (grow/printPosition (:paths @p))
+        (grow/printNextPosition (:paths @p)))
       (do
         (println "counter:" @counter)
         (swap! p assoc-in [:paths] (grow/grow (:paths @p)))
-        (println (:paths @p))))
+        (grow/printPosition (:paths @p))
+        (grow/printNextPosition (:paths @p))))
     (swap! counter inc)))
 
 

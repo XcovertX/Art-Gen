@@ -34,6 +34,24 @@
                        :fill-color nil
                        :stroke-color nil))
 
+(defn printPosition
+  [p]
+  (println "Position:" (map
+                        (fn [path]
+                          (map
+                           (fn [node] (:pos node))
+                           (:nodes path)))
+                        p)))
+
+(defn printNextPosition
+  [p]
+  (println "Next Position:" (map
+                             (fn [path]
+                               (map
+                                (fn [node] (:next-position (:data node)))
+                                (:nodes path)))
+                             p)))
+
 (defn addPath
   "adds a given path to path-map"
   [path]
@@ -225,7 +243,6 @@
   [paths node]
   (let [radius (:repulsion-radius (:settings (:data node)))
         nodes (cropNodes paths node radius)]
-    (println "lkslks" (count nodes))
     (flatten
      (map
       #(nearest-neighbors % node radius)
@@ -236,18 +253,16 @@
   [paths path-index]
   (let [path (get paths path-index)
         nodes (atom (:nodes path))]
-    (doseq [node @nodes]
-      (println (radiusNN paths node))
-      (doseq [neighbor (radiusNN paths node)]
-        (println neighbor)
-        (let [neighbor (into [] neighbor)
-              x (lerp (get (:pos node) 0)
-                      (get (:pos neighbor) 0)
-                      (- 0 (:repulsion-force (:settings (:data node)))))
-              y (lerp (get (:pos node) 1)
-                      (get (:pos neighbor) 1)
-                      (- 0 (:repulsion-force (:settings (:data node)))))]
-          (swap! nodes update-in [:data :next-position] assoc :x x :y y))))
+    (doseq [node-index (range (count @nodes))]
+      (let [node (get @nodes node-index)]
+        (doseq [neighbor (radiusNN paths node)]
+          (let [x (lerp (get (:pos node) 0)
+                        (get (:pos neighbor) 0)
+                        (- 0 (:repulsion-force (:settings (:data node)))))
+                y (lerp (get (:pos node) 1)
+                        (get (:pos neighbor) 1)
+                        (- 0 (:repulsion-force (:settings (:data node)))))]
+            (swap! nodes update-in [node-index :data :next-position] assoc :x x :y y)))))
     @nodes))
 
 (def training-set
@@ -300,7 +315,11 @@
     (doseq [path-index (range (count @new-paths))
             :let [path (get @new-paths path-index)
                   nodes (:nodes path)]]
+      (printPosition @new-paths)
+      (printNextPosition @new-paths)
       (swap! new-paths update-in [path-index] assoc :nodes (applyAttraction nodes))
+      (printPosition @new-paths)
+      (printNextPosition @new-paths)
       (swap! new-paths update-in [path-index] assoc :nodes (applyRepulsion @new-paths path-index)))
     @new-paths))
 
@@ -311,15 +330,3 @@
         paths (grow p)]
     paths))
      
-(defn iterateGrowth
-  "initializes growth"
-  [paths]
-  (let [new-nodes (reduce conj (doseq [path-index (range (count paths))
-                                       :let [path (get paths path-index)
-                                             nodes (:nodes @path)]]
-                                 (doseq [node-index (range (count nodes))]
-                                   (swap! path assoc-in [:nodes] (applyGrowth paths path-index nodes node-index)))))]
-    
-    ;; swap! path assoc-in [:nodes] new-nodes)
-   ;; swap! path assoc-in [:nodes] paths
-  ))
