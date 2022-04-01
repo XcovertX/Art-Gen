@@ -12,8 +12,6 @@
 
 ;; ------------ Growth Tools -----------------
 
-(def tree (atom []))
-
 (def path-map (atom {:paths []}))
 (defrecord Path [nodes
                  settings
@@ -50,8 +48,7 @@
 (defn buildPath
   "builds a path"
   [nodes settings is-closed bounds]
-  (atom
-   (Path. nodes settings is-closed bounds)))
+  (Path. nodes settings is-closed bounds))
 
 (defn prunePaths
   "removes paths that are too small"
@@ -132,65 +129,55 @@
                           (/ ((:settings node ) :brownian-motion-range) 2)))]
     (assoc node :pos [newx newy])))
 
+(defn attract
+  [node connected-node]
+  (let [distance (getDistance node connected-node)
+        least-min-distance (Math/min
+                            (:min-distance (:settings (:data node)))
+                            (:min-distance (:settings (:data connected-node))))]
+    (if (> distance least-min-distance)
+      (let [x (lerp (:x (:next-position (:data node)))
+                    (get (:pos connected-node) 0)
+                    (:attraction-force (:settings (:data node))))
+            y (lerp (:y (:next-position (:data node)))
+                    (get (:pos connected-node) 1)
+                    (:attraction-force (:settings (:data node))))
+            node (update-in node [:data :next-position] assoc :x x :y y)]
+        node)
+      node))
+  )
+
 (defn applyAttraction
-  "moves node closer to its connected nodes"
-  [nodes index]
-  (let [node (get nodes index)
-        connected-nodes (getConnectedNodes nodes index)
-            ;; move towards next positions if exists
-        node (if (and
-                  (not= (:next connected-nodes) nil)
-                  (not (:is-fixed node)))
-               (let [distance (getDistance (get nodes index) (:next connected-nodes))
-                     least-min-distance (Math/min
-                                         (:min-distance (:settings (:data node)))
-                                         (:min-distance (:settings (:data (:next connected-nodes)))))]
-                 (if (> distance least-min-distance)
-                   (let [x (lerp (:x (:next-position (:data node)))
-                                 (get (:pos (:next connected-nodes)) 0)
-                                 (:attraction-force (:settings (:data node))))
-                         y (lerp (:y (:next-position (:data node)))
-                                 (get (:pos (:next connected-nodes)) 1)
-                                 (:attraction-force (:settings (:data node))))
-                         node (update-in node [:data :next-position] assoc :x x)
-                         node (update-in node [:data :next-position] assoc :y y)]
-                     node)))
-               node)
+  "moves all given nodes closer to their connected nodes"
+  [nodes]
+  (let [new-nodes (atom nodes)]
+   (doseq [index (range (count @new-nodes))]
+          (let [node (get @new-nodes index)
+                connected-nodes (getConnectedNodes @new-nodes index)
+                next-node (:next connected-nodes)
+                previous-node (:prev connected-nodes)
+                node (if (and (not= next-node nil)
+                              (not (:is-fixed node)))
+                       (attract node next-node)
+                       node)
+                node (if (and (not= previous-node nil)
+                              (not (:is-fixed node)))
+                       (attract node previous-node)
+                       node)]
+            (swap! new-nodes assoc-in [index] node)))
+    @new-nodes))
 
-    ;; move towards previous position if exists
-        node (if (and
-                  (not= (:prev connected-nodes) nil)
-                  (not (:is-fixed node)))
-               (let [distance (getDistance (get nodes index) (:prev connected-nodes))
-                     least-min-distance (Math/min
-                                         (:min-distance (:settings (:data node)))
-                                         (:min-distance (:settings (:data (:prev connected-nodes)))))]
-                 (if (> distance least-min-distance)
-                   (let [x (lerp (:x (:next-position (:data node)))
-                                 (get (:pos (:prev connected-nodes)) 0)
-                                 (:attraction-force (:settings (:data node))))
-                         y (lerp (:y (:next-position (:data node)))
-                                 (get (:pos (:prev connected-nodes)) 1)
-                                 (:attraction-force (:settings (:data node))))
-                         node (update-in node [:data :next-position] assoc :x x)
-                         node (update-in node [:data :next-position] assoc :y y)]
-                     node)))
-               node)]
-    node))
 
-(defn applyRepulsion
-  ""
-  [index r-tree]
-  (let [x (:x (index (:nodes @node-map)))
-        y (:y (index (:nodes @node-map)))]))
 
-(defn grow
-  "iterates one whole step of the cell growth"
-  [path]
-  (let [new-path (atom path)]
-   (doseq [node path]
-     (swap! new-path assoc-in [:nodes node] (applyBrownianMotion node))
-     (swap! new-path assoc-in (applyAttraction path (.indexOf path node))))))
+(declare applyRepulsion)
+
+;; (defn grow
+;;   "iterates one whole step of the cell growth"
+;;   [path]
+;;   (let [new-path (atom path)]
+;;    (doseq [node path]
+;;      (swap! new-path assoc-in [:nodes node] (applyBrownianMotion node))
+;;      )))
 
 (defn test-reduce
   [paths]
@@ -205,11 +192,11 @@
    (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
 
 (defn nearest-neighbors
-  [nodes query radius]
+  [nodes node radius]
   (take radius
         (sort-by :distance
                  (map
-                  #(assoc % :distance (euclidean-distance (:pos query) (:pos %)))
+                  #(assoc % :distance (euclidean-distance (:pos node) (:pos %)))
                   nodes))))
 
 (defn knn
@@ -219,26 +206,49 @@
     (key (apply max-key val vote-freq))))
 
 (defn cropNodes
-  [paths query radius]
+  [paths node radius]
   (map
-   (fn [path] (let [negX (- (nth (:pos query) 0) radius)
-                    negY (- (nth (:pos query) 1) radius)
-                    posX (+ (nth (:pos query) 0) radius)
-                    posY (+ (nth (:pos query) 1) radius)]
-                (filter
-                 #(and (>= (nth (:pos %) 0) negX)
-                       (>= (nth (:pos %) 1) negY)
-                       (<= (nth (:pos %) 0) posX)
-                       (<= (nth (:pos %) 1) posY))
-                 (:nodes @path))))
+   (fn [path]
+     (let [negX (- (nth (:pos node) 0) radius)
+           negY (- (nth (:pos node) 1) radius)
+           posX (+ (nth (:pos node) 0) radius)
+           posY (+ (nth (:pos node) 1) radius)]
+       (filter
+        #(and (>= (nth (:pos %) 0) negX)
+              (>= (nth (:pos %) 1) negY)
+              (<= (nth (:pos %) 0) posX)
+              (<= (nth (:pos %) 1) posY))
+        (:nodes path))))
    paths))
 
 (defn radiusNN
-  [paths query radius]
-  (let [nodes (cropNodes paths query radius)]
-    (map
-     #(nearest-neighbors % query radius)
-     nodes)))
+  [paths node]
+  (let [radius (:repulsion-radius (:settings (:data node)))
+        nodes (cropNodes paths node radius)]
+    (println "lkslks" (count nodes))
+    (flatten
+     (map
+      #(nearest-neighbors % node radius)
+      nodes))))
+
+(defn applyRepulsion
+  "moves the indexed node away from any node within its radius"
+  [paths path-index]
+  (let [path (get paths path-index)
+        nodes (atom (:nodes path))]
+    (doseq [node @nodes]
+      (println (radiusNN paths node))
+      (doseq [neighbor (radiusNN paths node)]
+        (println neighbor)
+        (let [neighbor (into [] neighbor)
+              x (lerp (get (:pos node) 0)
+                      (get (:pos neighbor) 0)
+                      (- 0 (:repulsion-force (:settings (:data node)))))
+              y (lerp (get (:pos node) 1)
+                      (get (:pos neighbor) 1)
+                      (- 0 (:repulsion-force (:settings (:data node)))))]
+          (swap! nodes update-in [:data :next-position] assoc :x x :y y))))
+    @nodes))
 
 (def training-set
   [{:pos [5  5] :class "a"}
@@ -255,15 +265,15 @@
 (def training-set-2
   (let [paths (vector (buildPath [(buildNode 7 2)
                                   (buildNode 3 1)
-                                  (buildNode 50 13)]
+                                  (buildNode 3 3)]
                                  "settings" false "bounds")
-                      (buildPath [(buildNode 7 3)
-                                  (buildNode 6 1)
-                                  (buildNode 5 2)]
+                      (buildPath [(buildNode 6 3)
+                                  (buildNode 6 4)
+                                  (buildNode 5 3)]
                                  "settings" false "bounds"))]
     paths))
 
-(defn testKNN
+(defn testKN
   []
   (let [query [5 0]
         k 1]
@@ -281,11 +291,35 @@
   (addPath
    (buildPath (createLine pos1 pos2) default-settings false nil)))
 
+(defn update-map-entries [m e]
+  (reduce #(update-in %1 [(first %2)] (fn [_] (last %2))) m e))
+
+(defn grow
+  [paths]
+  (let [new-paths (atom paths)]
+    (doseq [path-index (range (count @new-paths))
+            :let [path (get @new-paths path-index)
+                  nodes (:nodes path)]]
+      (swap! new-paths update-in [path-index] assoc :nodes (applyAttraction nodes))
+      (swap! new-paths update-in [path-index] assoc :nodes (applyRepulsion @new-paths path-index)))
+    @new-paths))
+
 (defn init-growth
   "initializes growth"
   []
-  (let [paths training-set-2
-        path @(get paths 0)
-        nodes (:nodes path)
-        ]
-    (applyAttraction nodes 0)))
+  (let [p training-set-2
+        paths (grow p)]
+    paths))
+     
+(defn iterateGrowth
+  "initializes growth"
+  [paths]
+  (let [new-nodes (reduce conj (doseq [path-index (range (count paths))
+                                       :let [path (get paths path-index)
+                                             nodes (:nodes @path)]]
+                                 (doseq [node-index (range (count nodes))]
+                                   (swap! path assoc-in [:nodes] (applyGrowth paths path-index nodes node-index)))))]
+    
+    ;; swap! path assoc-in [:nodes] new-nodes)
+   ;; swap! path assoc-in [:nodes] paths
+  ))

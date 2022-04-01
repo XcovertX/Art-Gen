@@ -22,16 +22,30 @@
 
 (def img-url "abstract-painting.jpg")
 (def img (ref nil))
+(def p (atom {:paths {}}))
+(def counter (atom 0))
 
 (defn setup []
   ;; (dosync (ref-set img (load-image img-url)))
   (stroke 210 100 115)
   (stroke-weight 3)
-  (background 0 0 0))
+  (background 0 0 0)
+  (reset! p {:paths {}})
+  (reset! counter 0))
 
 (defn draw []
- (no-loop)
- (grow/init-growth))
+  (no-loop)
+  (doseq [x (range 5)]
+    (if (= @counter 0)
+      (do
+        (println "counter:" @counter)
+        (swap! p assoc-in [:paths] (grow/init-growth))
+        (println (:paths @p)))
+      (do
+        (println "counter:" @counter)
+        (swap! p assoc-in [:paths] (grow/grow (:paths @p)))
+        (println (:paths @p))))
+    (swap! counter inc)))
 
 
 
