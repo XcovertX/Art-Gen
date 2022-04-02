@@ -112,31 +112,6 @@
   [vec pos item]
   (apply conj (subvec vec 0 pos) item (subvec vec pos)))
 
-(defn getMidpointNode
-  "retrieves the middle node between two nodes"
-  [node-A node-B]
-  (let [newx (/ (+ (:x node-A) (:x node-B)) 2)
-        newy (/ (+ (:y node-A) (:y node-B)) 2)]
-    (buildNode newx newy)))
-
-(defn splitEdges
-  "searches for edges that are too long and splits them"
-  [path]
-  (let [new-path (atom path)]
-    (doseq [node (:nodes path)]
-      (let [index (.indexOf @new-path node)
-            length (count @new-path)
-            connected-nodes (getConnectedNodes index (:nodes @new-path))
-            prev-node (:prev connected-nodes)
-            next-node (:next connected-nodes)
-            distance (getDistance node prev-node)]
-        (if (and (not= next-node nil) (>= distance (:max-distance (:settings path))))
-          (let [midpoint-node (getMidpointNode node prev-node)]
-            (if (= index 0)
-              (swap! new-path (insert @new-path length midpoint-node))
-              (swap! new-path (insert @new-path index midpoint-node)))))))
-    @new-path))
-
 (defn applyBrownianMotion
   "simulates minor motion"
   [node]
@@ -154,11 +129,15 @@
                             (:min-distance (:settings (:data node)))
                             (:min-distance (:settings (:data connected-node))))]
     (if (> distance least-min-distance)
-      (let [x (lerp (:x (:next-position (:data node)))
-                    (get (:pos connected-node) 0)
+      (let [connected-x (get (:pos connected-node) 0)
+            connected-y (get (:pos connected-node) 1)
+            next-x (:x (:next-position (:data node)))
+            next-y (:y (:next-position (:data node)))
+            x (lerp next-x
+                    connected-x
                     (:attraction-force (:settings (:data node))))
-            y (lerp (:y (:next-position (:data node)))
-                    (get (:pos connected-node) 1)
+            y (lerp next-y
+                    connected-y
                     (:attraction-force (:settings (:data node))))
             node (update-in node [:data :next-position] assoc :x x :y y)]
         node)
@@ -188,14 +167,6 @@
 
 
 (declare applyRepulsion)
-
-;; (defn grow
-;;   "iterates one whole step of the cell growth"
-;;   [path]
-;;   (let [new-path (atom path)]
-;;    (doseq [node path]
-;;      (swap! new-path assoc-in [:nodes node] (applyBrownianMotion node))
-;;      )))
 
 (defn test-reduce
   [paths]
@@ -265,6 +236,62 @@
             (swap! nodes update-in [node-index :data :next-position] assoc :x x :y y)))))
     @nodes))
 
+(defn getMidpointNode
+  "retrieves the middle node between two nodes"
+  [node-A node-B]
+  (let [newx (/ (+ (get node-A 0) (get node-B 0)) 2)
+        newy (/ (+ (get node-A 1) (get node-B 1)) 2)]
+    (buildNode newx newy)))
+
+(defn applyAlignment
+  [nodes]
+(let [new-nodes (atom nodes)]
+  (doseq [node-index (range (count @new-nodes))]
+    (let [node (get @new-nodes node-index)
+          connected-nodes (getConnectedNodes @new-nodes node-index)
+          next-node (:next connected-nodes)
+          previous-node (:prev connected-nodes)]
+      (when (and (not= next-node nil)
+                 (not= previous-node nil)
+                 (not (:is-fixed node)))
+        (let [midpoint (getMidpointNode previous-node next-node)
+              next-x (:x (:next-position (:data node)))
+              next-y (:y (:next-position (:data node)))
+              x (lerp next-x
+                      (get (:pos midpoint) 0)
+                      (:alignment-force (:settings (:data node))))
+              y (lerp next-y
+                      (get (:pos midpoint) 1)
+                      (:alignment-force (:settings (:data node))))]
+          (swap! new-nodes update-in [node-index :data :next-position] assoc :x x :y y)))))
+  @new-nodes))
+
+(defn applyBounds
+  "prevents given node from leaving some boundry"
+  [path node]
+  (if (and (not= (:bounds path) nil)
+           (some #(= (:pos node) %) (:bounds path)))
+    (update-in node [:is-fixed] assoc true)
+    node))
+
+(defn splitEdges
+  "searches for edges that are too long and splits them"
+  [path]
+  (let [new-path (atom path)]
+    (doseq [node (:nodes path)]
+      (let [index (.indexOf @new-path node)
+            length (count @new-path)
+            connected-nodes (getConnectedNodes index (:nodes @new-path))
+            prev-node (:prev connected-nodes)
+            next-node (:next connected-nodes)
+            distance (getDistance node prev-node)]
+        (if (and (not= next-node nil) (>= distance (:max-distance (:settings path))))
+          (let [midpoint-node (getMidpointNode node prev-node)]
+            (if (= index 0)
+              (swap! new-path (insert @new-path length midpoint-node))
+              (swap! new-path (insert @new-path index midpoint-node)))))))
+    @new-path))
+
 (def training-set
   [{:pos [5  5] :class "a"}
    {:pos [5  4] :class "b"}
@@ -278,13 +305,13 @@
    {:pos [5 -4] :class "j"}])
 
 (def training-set-2
-  (let [paths (vector (buildPath [(buildNode 7 2)
-                                  (buildNode 3 1)
-                                  (buildNode 3 3)]
+  (let [paths (vector (buildPath [(buildNode 70 25)
+                                  (buildNode 33 10)
+                                  (buildNode 20 33)]
                                  "settings" false "bounds")
-                      (buildPath [(buildNode 6 3)
-                                  (buildNode 6 4)
-                                  (buildNode 5 3)]
+                      (buildPath [(buildNode 60 32)
+                                  (buildNode 66 31)
+                                  (buildNode 59 38)]
                                  "settings" false "bounds"))]
     paths))
 
@@ -315,13 +342,27 @@
     (doseq [path-index (range (count @new-paths))
             :let [path (get @new-paths path-index)
                   nodes (:nodes path)]]
-      (printPosition @new-paths)
-      (printNextPosition @new-paths)
+      ;; (printPosition @new-paths)
+      ;; (printNextPosition @new-paths)
       (swap! new-paths update-in [path-index] assoc :nodes (applyAttraction nodes))
-      (printPosition @new-paths)
-      (printNextPosition @new-paths)
-      (swap! new-paths update-in [path-index] assoc :nodes (applyRepulsion @new-paths path-index)))
+      ;; (printPosition @new-paths)
+      ;; (printNextPosition @new-paths)
+      (swap! new-paths update-in [path-index] assoc :nodes (applyRepulsion @new-paths path-index))
+      )
     @new-paths))
+
+(defn grow-2
+  [paths]
+   (let [new-paths (atom paths)]
+     (doseq [path-index (range (count @new-paths))
+             :let [path (get @new-paths path-index)
+                   nodes (:nodes path)]]
+       
+       (doseq [node nodes]
+         (swap! new-paths update-in [path-index] assoc :nodes (applyBrownianMotion nodes))
+         (swap! new-paths update-in [path-index] assoc :nodes (applyAttraction nodes))
+         (swap! new-paths update-in [path-index] assoc :nodes (applyRepulsion @new-paths path-index))))
+     @new-paths))
 
 (defn init-growth
   "initializes growth"
