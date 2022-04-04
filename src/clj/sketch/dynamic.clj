@@ -34,53 +34,50 @@
   (reset! counter 0))
 
 (defn draw []
-  (no-loop)
-  (doseq [x (range 10)]
-    (background 0 0 0)
-    (if (= @counter 0)
-      (do
-        (swap! p assoc-in [:paths] (grow/init-growth window-width window-height))
-        (doseq [path (:paths @p)
-                :let [nodes (:nodes path)]]
-         (doseq [node-index (range (count nodes))
-                 :let [connected-nodes (grow/getConnectedNodes nodes node-index (:is-closed path))
-                       node (get nodes node-index)
-                       next (:next connected-nodes)
-                       prev (:prev connected-nodes)
-                       x (get (:pos node) 0)
-                       y (get (:pos node) 1)
-                       next-x (get (:pos next) 0)
-                       next-y (get (:pos next) 1)
-                       prev-x (get (:pos prev) 0)
-                       prev-y (get (:pos prev) 1)]]
-           (when (not= prev nil)
-             (line x y prev-x prev-y))
-           (when (not= next nil)
-             (line x y next-x next-y)))))
-      (do
-        (swap! p assoc-in [:paths] (grow/applyGrowth (:paths @p)))
-        (doseq [path (:paths @p)
-                :let [nodes (:nodes path)]]
-          (doseq [node-index (range (count nodes))
-                  :let [connected-nodes (grow/getConnectedNodes nodes node-index (:is-closed path))
-                        node (get nodes node-index)
-                        next (:next connected-nodes)
-                        prev (:prev connected-nodes)
-                        x (get (:pos node) 0)
-                        y (get (:pos node) 1)
-                        next-x (get (:pos next) 0)
-                        next-y (get (:pos next) 1)
-                        prev-x (get (:pos prev) 0)
-                        prev-y (get (:pos prev) 1)]]
-            (println x y next-x next-y prev-x prev-y)
-            (when (not= prev nil)
-              (line x y prev-x prev-y))
-            (when (not= next nil)
-              (line x y next-x next-y))))))
-    (Thread/sleep 5000)
-    (swap! counter inc))
+  (background 0 0 0)
+  (if (= @counter 0)
+    (do
+      (swap! p assoc-in [:paths] (grow/init-growth window-width window-height))
+      (doseq [path (:paths @p)
+              :let [nodes (:nodes path)]]
+        (doseq [node-index (range (count nodes))
+                :let [connected-nodes (grow/getConnectedNodes nodes node-index (:is-closed path))
+                      node (get nodes node-index)
+                      next (:next connected-nodes)
+                      prev (:prev connected-nodes)
+                      x (get (:pos node) 0)
+                      y (get (:pos node) 1)
+                      next-x (get (:pos next) 0)
+                      next-y (get (:pos next) 1)
+                      prev-x (get (:pos prev) 0)
+                      prev-y (get (:pos prev) 1)]]
+          (when (not= prev nil)
+            (line x y prev-x prev-y))
+          (when (not= next nil)
+            (line x y next-x next-y)))))
+    (do
+      (swap! p assoc-in [:paths] (grow/applyGrowth (:paths @p) window-width window-height))
+      (doseq [path (:paths @p)
+              :let [nodes (:nodes path)]]
+        (doseq [node-index (range (count nodes))
+                :let [connected-nodes (grow/getConnectedNodes nodes node-index (:is-closed path))
+                      node (get nodes node-index)
+                      next (:next connected-nodes)
+                      prev (:prev connected-nodes)
+                      x (get (:pos node) 0)
+                      y (get (:pos node) 1)
+                      next-x (get (:pos next) 0)
+                      next-y (get (:pos next) 1)
+                      prev-x (get (:pos prev) 0)
+                      prev-y (get (:pos prev) 1)]]
+          (when (not= prev nil)
+            (line x y prev-x prev-y))
+          (when (not= next nil)
+            (line x y next-x next-y))))))
+  (Thread/sleep 500)
+  (swap! counter inc))
   (grow/printPosition (:paths @p))
-  (grow/printNextPosition (:paths @p)))
+  (grow/printNextPosition (:paths @p))
 
 
 
