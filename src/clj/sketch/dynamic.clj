@@ -17,8 +17,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 900)
-(def window-height 900)
+(def window-width 1000)
+(def window-height 300)
 
 (def img-url "abstract-painting.jpg")
 (def img (ref nil))
@@ -73,15 +73,8 @@
           (when (not= prev nil)
             (line x y prev-x prev-y))
           (when (not= next nil)
-            (line x y next-x next-y))))
-      ;; (grow/printPosition (:paths @p))
-      ;; (grow/printNextPosition (:paths @p))
-      )
-      )
-  (Thread/sleep 200)
-  ;; (when (= (mod @counter 10) 0)
-  ;;   (println (count (:nodes (get (:paths @p) 0))))
-  ;;   (grow/printPosition (:paths @p)))
+            (line x y next-x next-y))))))
+  ;; (Thread/sleep 5000)
   (swap! counter inc))
   (grow/printPosition (:paths @p))
   (grow/printNextPosition (:paths @p))

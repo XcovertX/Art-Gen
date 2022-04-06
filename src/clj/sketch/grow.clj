@@ -18,22 +18,23 @@
                  is-closed
                  bounds
                  brownian
-                 alignment])
+                 alignment
+                 node-injection-interval])
 
 (def node-map (atom {:nodes []}))
 (defrecord Node [pos settings data])
-(defrecord Data [is-fixed velocity next-position])
+(defrecord Data [is-fixed is-end to-remove velocity next-position])
 
 (def default-settings (hash-map
-                       :min-distance 1
-                       :max-distance 20
+                       :min-distance 2
+                       :max-distance 5
                        :repulsion-radius 10
-                       :max-velocity 0.2
-                       :attraction-force 20
-                       :repulsion-force 1
-                       :allignment-force 5
-                       :node-injection-interval 100
-                       :brownian-motion-range 0.01
+                       :max-velocity 0.3
+                       :attraction-force 0.6
+                       :repulsion-force 0.21
+                       :allignment-force 0.35
+                       :node-injection-interval 10
+                       :brownian-motion-range 1
                        :fill-color nil
                        :stroke-color nil))
 
@@ -68,8 +69,8 @@
 
 (defn buildPath
   "builds a path"
-  [nodes settings is-closed bounds brownian alignment]
-  (Path. nodes settings is-closed bounds brownian alignment))
+  [nodes settings is-closed bounds brownian alignment node-injection-interval]
+  (Path. nodes settings is-closed bounds brownian alignment node-injection-interval))
 
 (defn addNode
   "atomically adds a node to node-map"
@@ -78,9 +79,9 @@
 
 (defn buildNode
   "constructs a new node"
-  [x y settings is-fixed]
+  [x y settings is-fixed is-end to-remove]
   (Node. [x y] settings
-         (Data. is-fixed 0 {:x x :y y})))
+         (Data. is-fixed is-end to-remove 0 {:x x :y y})))
 
 (defn getConnectedNodes ;; remove dependency on indicies
   "retrieves all nodes connected to a given node"
@@ -126,14 +127,15 @@
 (defn applyBrownianMotion
   "simulates minor motion"
   [node]
-  (let [x (get (:pos node) 0)
+  (if (not (:is-fixed (:data node)))
+   (let [x (get (:pos node) 0)
         y (get (:pos node) 1)
         new-x (+ x (random (- 0 (/ (:brownian-motion-range (:settings node)) 2))
                            (/ (:brownian-motion-range (:settings node)) 2)))
         new-y (+ y (random (- 0 (/ ((:settings node) :brownian-motion-range) 2))
                            (/ (:brownian-motion-range (:settings node)) 2)))]
-
-    (assoc node :pos [new-x new-y])))
+    (assoc node :pos [new-x new-y]))
+    node))
 
 (defn attract
   [node connected-node]
@@ -247,7 +249,7 @@
   [node-A node-B settings]
   (let [new-x (/ (+ (get (:pos node-A) 0) (get (:pos node-B) 0)) 2)
         new-y (/ (+ (get (:pos node-A) 1) (get (:pos node-B) 1)) 2)]
-    (buildNode new-x new-y settings false)))
+    (buildNode new-x new-y settings false false false)))
 
 (defn applyAlignment
   [path node-index]
@@ -292,10 +294,10 @@
   (let [x (get (:pos node) 0)
         y (get (:pos node) 1)]
     (if (or
-         (< x 0)
-         (< y 0)
-         (> x w)
-         (> y h))
+         (< x 10)
+         (< y 10)
+         (> x (- w 10))
+         (> y (- h 10)))
       (assoc-in node [:data :is-fixed] true)
       node)))
 
@@ -359,6 +361,25 @@
             (swap! new-path assoc-in [:nodes] (eject (:nodes @new-path) (- index 1))))))))
   @new-path))
 
+(defn pruneNodes-2
+  "removes nodes that are too close"
+  [path]
+  (let [new-path (atom path)]
+    (doseq [node-index (range (count (:nodes @new-path)))]
+      (let [node (get (:nodes @new-path) node-index)
+            length (count @new-path)
+            connected-nodes (getConnectedNodes (:nodes @new-path) node-index (:is-closed @new-path))
+            prev-node (:prev connected-nodes)
+            next-node (:next connected-nodes)
+            distance (getDistance node prev-node)]
+        (when (and (not= prev-node nil)
+                   (not (:is-end (:data prev-node)))
+                   (not (:is-fixed (:data prev-node)))
+                   (not (:to-remove (:data prev-node)))
+                   (< distance (:min-distance (:settings @new-path))))
+          (swap! new-path assoc-in [:nodes (- node-index 1) :data :to-remove] true))))
+    (assoc-in @new-path [:nodes] (into [] (remove #(:to-remove (:data %)) (:nodes @new-path))))))
+
 (defn makeCanvasBounds
   "builds bounds out of the perimeter of the canvas"
   [w h]
@@ -372,34 +393,57 @@
 
 (defn training-set-2
   [w h]
-  [(buildPath [(buildNode 500 502 default-settings true)
-               (buildNode 520 497 default-settings false)
-               (buildNode 527 500 default-settings false)
-               (buildNode 500 532 default-settings false)
-               (buildNode 510 530 default-settings false)
-               (buildNode 530 498 default-settings false)]
-              default-settings false (makeCanvasBounds w h) true 0.45)
-   (buildPath [(buildNode 560 502 default-settings true)
-               (buildNode 550 570 default-settings false)
-               (buildNode 567 500 default-settings false)
-               (buildNode 530 570 default-settings false)
-               (buildNode 490 430 default-settings false)
-               (buildNode 590 563 default-settings false)]
-              default-settings false (makeCanvasBounds w h) true 0.45)])
+  [(buildPath [(buildNode 500 502 default-settings true true false)
+               (buildNode 520 497 default-settings false false false)
+               (buildNode 527 500 default-settings false false false)
+               (buildNode 500 532 default-settings false false false)
+               (buildNode 510 530 default-settings false false false)
+               (buildNode 530 498 default-settings false false false)]
+              default-settings false (makeCanvasBounds w h) true 0.45 10)
+   (buildPath [(buildNode 560 502 default-settings true true false)
+               (buildNode 550 570 default-settings false false false)
+               (buildNode 567 500 default-settings false false false)
+               (buildNode 530 570 default-settings false false false)
+               (buildNode 490 430 default-settings false false false)
+               (buildNode 590 563 default-settings false false false)]
+              default-settings false (makeCanvasBounds w h) true 0.45 10)])
 
 (defn createLine
   "creates a node list containg 2 nodes"
   [pos1 pos2]
   (vector
-   (buildNode (get pos1 0) (get pos1 1) default-settings true)
-   (buildNode (get pos2 0) (get pos2 1) default-settings true)))
+   (buildNode (get pos1 0) (get pos1 1) default-settings true true false)
+   (buildNode 580 170 default-settings false false false)
+   (buildNode 30 270 default-settings false false false)
+   (buildNode 540 70 default-settings false false false)
+   (buildNode 72 20 default-settings false false false)
+   (buildNode (get pos2 0) (get pos2 1) default-settings true true false)))
 
 (defn addLinePath
   [pos1 pos2]
-  (buildPath (createLine pos1 pos2) default-settings false [] true 0.45))
+  (buildPath (createLine pos1 pos2) default-settings false [] true 0.45 10))
 
 (defn update-map-entries [m e]
   (reduce #(update-in %1 [(first %2)] (fn [_] (last %2))) m e))
+
+(def node-injection-time (atom 0))
+
+(defn injectRandomNode
+  [path]
+  (let [nodes (:nodes path)
+        node-index (rand-int (count nodes))
+        node (get nodes node-index)
+        length (count nodes)
+        connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
+        next-node (:next connected-nodes)
+        previous-node (:prev connected-nodes)
+        distance (getDistance node previous-node)]
+    (if (and (not= next-node nil)
+             (not= previous-node nil)
+             (> distance (:min-distance (:settings path))))
+      (let [midpoint-node (getMidpointNode node previous-node (:settings path))]
+        (assoc-in path [:nodes] (insert (:nodes path) node-index midpoint-node)))
+      path)))
 
 (defn grow
   "moves the node to new spot"
@@ -410,8 +454,8 @@
           next-x (:x (:next-position (:data node)))
           next-y (:y (:next-position (:data node)))
           max-velocity (:max-velocity (:settings node))
-          new-x (int (lerp x next-x max-velocity))
-          new-y (int (lerp y next-y max-velocity))]
+          new-x (Math/round (lerp x next-x max-velocity))
+          new-y (Math/round (lerp y next-y max-velocity))]
       (assoc-in node [:pos] [new-x new-y]))
     node))
 
@@ -420,20 +464,33 @@
   (let [new-paths (atom paths)]
     (doseq [path-index (range (count @new-paths))]
       (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
+        ;; (printPosition @new-paths)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
+      ;; (printPosition @new-paths)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAttraction (get @new-paths path-index) node-index))
+      ;;  (printPosition @new-paths)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyRepulsion @new-paths path-index node-index))
+      ;;  (printPosition @new-paths)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAlignment (get @new-paths path-index) node-index))
+      ;;  (printPosition @new-paths)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
+      ;;  (printPosition @new-paths)
         (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
+      ;; (printPosition @new-paths)
       (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
-      (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index))))
+      ;; (printPosition @new-paths)
+      (swap! new-paths assoc-in [path-index] (pruneNodes-2 (get @new-paths path-index)))
+      ;; (printPosition @new-paths)
+      (when (> (rand-int 100) 40)
+       (swap! new-paths assoc-in [path-index] (injectRandomNode (get @new-paths path-index))))
+      )
+    ;; (Thread/sleep 10000)
     @new-paths))
 
 (defn init-growth ;;call it seed?
   "initializes growth"
   [w h]
   (let [p (training-set-2 w h)
-        p-2 [(addLinePath [200 (/ h 2)] [(- w 200) (/ h 2)])]
+        p-2 [(addLinePath [10 (/ h 2)] [(- w 10) (/ h 2)])]
         paths (applyGrowth p-2 w h)]
     paths))
