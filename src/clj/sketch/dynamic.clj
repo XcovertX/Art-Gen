@@ -17,8 +17,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1000)
-(def window-height 300)
+(def window-width 500)
+(def window-height 500)
 
 (def img-url "abstract-painting.jpg")
 (def img (ref nil))
@@ -51,10 +51,14 @@
                       next-y (get (:pos next) 1)
                       prev-x (get (:pos prev) 0)
                       prev-y (get (:pos prev) 1)]]
+          (when (not (:is-fixed path))
+            (when (:draw-nodes (:settings path))
+              (ellipse x y 2 2))
+            (when (:draw-random-injections (:settings path))
+              (when (:is-random (:data node))
+                (ellipse x y 2 2))))
           (when (not= prev nil)
-            (line x y prev-x prev-y))
-          (when (not= next nil)
-            (line x y next-x next-y)))))
+            (line x y prev-x prev-y)))))
     (do
       (swap! p assoc-in [:paths] (grow/applyGrowth (:paths @p) window-width window-height))
       (doseq [path (:paths @p)
@@ -70,12 +74,19 @@
                       next-y (get (:pos next) 1)
                       prev-x (get (:pos prev) 0)
                       prev-y (get (:pos prev) 1)]]
+          (when (not (:is-fixed path))
+           (when (:draw-nodes (:settings path))
+            (ellipse x y 2 2))
+          (when (:draw-random-injections (:settings path))
+            (when (:is-random (:data node))
+              (ellipse x y 2 2))))
           (when (not= prev nil)
-            (line x y prev-x prev-y))
-          (when (not= next nil)
-            (line x y next-x next-y))))))
+            (line x y prev-x prev-y))))))
   ;; (Thread/sleep 5000)
-  (swap! counter inc))
+  (swap! counter inc)
+  ;; (when (mod @counter 10)
+  ;;   (println (count (:nodes (get (:paths @p) 0)))))
+  )
   (grow/printPosition (:paths @p))
   (grow/printNextPosition (:paths @p))
 
