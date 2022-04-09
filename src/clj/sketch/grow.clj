@@ -27,13 +27,12 @@
 (defrecord Data [is-fixed is-end to-remove is-random velocity next-position])
 
 (def default-settings (hash-map
-                       :min-distance 3
-                       :max-distance 12
-                       :repulsion-radius 10
+                       :min-distance 20
+                       :max-distance 30
+                       :repulsion-radius 14
                        :max-velocity 0.1
-                       :attraction-force 1.8
-                       :repulsion-force 1.7
-
+                       :attraction-force 0.3
+                       :repulsion-force 2.5
                        :allignment-force 0.05
                        :node-injection-interval 10
                        :brownian-motion-range 0.6
@@ -42,20 +41,21 @@
                        :draw-nodes false
                        :draw-random-injections false))
 
-(def fixed-path-settings (hash-map
-                          :min-distance 5
-                          :max-distance 13
-                          :repulsion-radius 18
-                          :max-velocity 0.15
-                          :attraction-force 0.9
-                          :repulsion-force 0.8
-                          :allignment-force 0.19
-                          :node-injection-interval 10
-                          :brownian-motion-range 1
-                          :fill-color nil
-                          :stroke-color nil
-                          :draw-nodes false
-                          :draw-random-injections true))
+(def path-settings (hash-map
+                    :min-distance 7
+                    :max-distance 15
+                    :repulsion-radius 15
+                    :max-velocity 0.05
+                    :attraction-force 0.1
+                    :repulsion-force 2.5
+                    :allignment-force 0.45
+                    :node-injection-interval 10
+                    :brownian-motion-range 0.5
+                    :fill-color nil
+                    :stroke-color nil
+                    :draw-nodes false
+                    :draw-random-injections true
+                    :bug-finder-mode true))
 
 (defn printPosition
   [p]
@@ -74,6 +74,63 @@
                                 (fn [node] (:next-position (:data node)))
                                 (:nodes path)))
                              p)))
+
+(defn indexed
+  "Returns a lazy sequence of [index, item] pairs, where items come
+  from 's' and indexes count up from zero.
+
+  (indexed '(a b c d))  =>  ([0 a] [1 b] [2 c] [3 d])"
+  [s]
+  (map vector (iterate inc 0) s))
+
+(defn positions
+  "Returns a lazy sequence containing the positions at which pred
+   is true for items in coll."
+  [pred coll]
+  (first (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
+
+;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
+
+(def i (atom 1))
+
+(defn colorSpectrum
+  "changes the color of node output to RGB spectrum R: @ 0 V: @ length of vector"
+  [nodes]
+  (let [multiplier (/ 360 (count nodes))]
+    (if (mod 100000 @i)
+    ;;   (println (mapv #(ceil (* multiplier %)) (range (count nodes)))))
+    ;; (swap! i inc)
+    (mapv #(ceil (* multiplier %)) (range (count nodes))))))
+
+(declare getConnectedNodes)
+
+(defn drawPath
+ "draws the path according to the current settings"
+ [path]
+ (let [nodes (:nodes path)
+       node-color (when (:bug-finder-mode (:settings path))
+                   (colorSpectrum nodes))]
+      (doseq [node-index (range (count nodes))
+              :let [connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
+                    node (get nodes node-index)
+                    next (:next connected-nodes)
+                    prev (:prev connected-nodes)
+                    x (get (:pos node) 0)
+                    y (get (:pos node) 1)
+                    next-x (get (:pos next) 0)
+                    next-y (get (:pos next) 1)
+                    prev-x (get (:pos prev) 0)
+                    prev-y (get (:pos prev) 1)]]
+        (when (not (:is-fixed path))
+          (when (:bug-finder-mode (:settings path))
+            (stroke (get node-color node-index) 360 360))
+          (when (:draw-nodes (:settings path))
+            (ellipse x y 2 2))
+          (when (:draw-random-injections (:settings path))
+            (when (:is-random (:data node))
+              (ellipse x y 2 2)))
+          (when (not= next nil)
+            (line x y next-x next-y))))))
 
 (defn addPath
   "adds a given path to path-map"
@@ -159,7 +216,7 @@
 (defn removeFixed
   "removes all fixed nodes"
   [nodes]
-  (filterv #(not (:is-fixed (:data %))) nodes))
+  (filterv #(or (not (:is-fixed (:data %)))  (:is-end (:data %))) nodes))
 
 (defn attract
   [node connected-node]
@@ -325,22 +382,6 @@
       (assoc-in node [:data :is-fixed] true)
       node)))
 
-(defn indexed
-  "Returns a lazy sequence of [index, item] pairs, where items come
-  from 's' and indexes count up from zero.
-
-  (indexed '(a b c d))  =>  ([0 a] [1 b] [2 c] [3 d])"
-  [s]
-  (map vector (iterate inc 0) s))
-
-(defn positions
-  "Returns a lazy sequence containing the positions at which pred
-   is true for items in coll."
-  [pred coll]
-  (first (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
-
-;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
-
 (defn splitEdges
   "searches for edges that are too long and splits them"
   [path]
@@ -427,7 +468,7 @@
 
 (defn addLinePath
   [pos1 pos2]
-  (buildPath (createLine pos1 pos2) default-settings false [] true 0.45 10 false))
+  (buildPath (createLine pos1 pos2) path-settings false [] true 0.45 10 false))
 
 
 (defn createTriangle
@@ -437,7 +478,7 @@
     (buildNode x1 y1 default-settings false true false false)
     (buildNode x2 y2 default-settings false false false false)
     (buildNode x3 y3 default-settings false true false false))
-   default-settings true [] true 0.45 10 false))
+   path-settings true [] true 0.45 10 false))
 
 (defn createFixedTriangle
   []
@@ -446,7 +487,7 @@
     (buildNode 600 300 default-settings false true false false)
     (buildNode 550 400 default-settings false false false false)
     (buildNode 650 600 default-settings false true false false))
-   default-settings true [] true 0.45 10 true))
+   path-settings true [] true 0.45 10 true))
 
 
 (defn createTriangle-2
@@ -456,7 +497,7 @@
     (buildNode 100 100 default-settings false false false false)
     (buildNode 250 250 default-settings false false false false)
     (buildNode 50 250 default-settings false false false false))
-   default-settings true [] true 0.45 10 false))
+   path-settings true [] true 0.45 10 false))
 
 (defn angleTestCase
   []
@@ -480,7 +521,7 @@
   (let [nodes (:nodes path)
         node-index (rand-int (count nodes))
         node (get nodes node-index)
-        length (count nodes)
+        length (- (count nodes) 1)
         connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
         next-node (:next connected-nodes)
         previous-node (:prev connected-nodes)
@@ -488,8 +529,10 @@
     (if (and (not= next-node nil)
              (not= previous-node nil)
              (> distance (:min-distance (:settings path))))
-      (let [midpoint-node (getMidpointNode node previous-node (:settings path) true false )]
-        (assoc-in path [:nodes] (insert (:nodes path) node-index midpoint-node)))
+      (let [midpoint-node (getMidpointNode node previous-node (:settings path) true false)]
+        (if (= node-index 0)
+          (assoc-in path [:nodes] (conj nodes length midpoint-node))
+          (assoc-in path [:nodes] (insert (:nodes path) node-index midpoint-node))))
       path)))
 
 (defn addFirstVec
@@ -564,14 +607,16 @@
       (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
       (swap! new-paths assoc-in [path-index] (pruneNodes-2 (get @new-paths path-index)))
       (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
-      (if (> (rand-int 100) 50)
+      (when (> (rand-int 100) 70)
+       (if (> (rand-int 100) 50)
         (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature-2 (get @new-paths path-index)))
-        (swap! new-paths assoc-in [path-index] (injectRandomNode (get @new-paths path-index)))))
+        (swap! new-paths assoc-in [path-index] (injectRandomNode (get @new-paths path-index))))))
     @new-paths))
 
 (defn init-growth ;;call it seed?
   "initializes growth"
   [w h]
-  (let [p-2 [(createTriangle 200 100 20 350 380 350)]
-        paths (applyGrowth p-2 w h)]
+  (let [p-1 [(createTriangle 50 50 150 250 250 50)]
+        p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
+        paths (applyGrowth p-1 w h)]
     paths))
