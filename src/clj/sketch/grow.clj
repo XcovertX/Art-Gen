@@ -51,7 +51,7 @@
                     :max-velocity 0.05
                     :attraction-force 2.1
                     :repulsion-force 0.5
-                    :allignment-force 0.45
+                    :allignment-force 3.45
                     :node-injection-interval 10
                     :brownian-motion-range 0.55
                     :fill-color nil
@@ -101,11 +101,11 @@
 (defn colorSpectrum
   "changes the color of node output to RGB spectrum R: @ 0 V: @ length of vector"
   [nodes]
-  (let [multiplier (/ 360 (count nodes))]
+  (let [multiplier (/ 256 (count nodes))]
     ;; (if (mod 100000 @i)
     ;;   (println (mapv #(ceil (* multiplier %)) (range (count nodes)))))
     ;; (swap! i inc)
-    (mapv #(ceil (* multiplier %)) (range (count nodes)))))
+    (mapv #(round (* multiplier %)) (range (count nodes)))))
 
 (declare getConnectedNodes)
 
@@ -597,7 +597,7 @@
                                rad (Math/abs tan)
                                deg (degrees rad)
                                angle (Math/round deg)]
-                           (if (<= angle 15)
+                           (if (<= angle 20)
                              (conj new-nodes node)
                              (let [settings (if (:uniform-node-settings? (:settings path))
                                               (:settings path)
@@ -609,6 +609,16 @@
                                  (conj new-nodes prev-midpoint-node next-midpoint-node))))))))))
                []
                (range (count nodes))))))
+
+(defn testAngle
+  [n d]
+  (let [
+        a (/ n d)
+        tan (Math/atan a)
+        rad (Math/abs tan)
+        deg (degrees rad)
+        angle (Math/round deg)]
+    angle))
 
 (defn grow
   "moves the node to new spot"
@@ -647,7 +657,7 @@
 
       (swap! new-paths assoc-in [path-index] (pruneNodes-2 (get @new-paths path-index)))
 
-      (swap! new-paths assoc-in [path-index :nodes] (amplifyFixed (:nodes (get @new-paths path-index))))
+      ;; (swap! new-paths assoc-in [path-index :nodes] (amplifyFixed (:nodes (get @new-paths path-index))))
       (when (> (rand-int 100) 70)
         (if (> (rand-int 100) 50)
           (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature-2 (get @new-paths path-index)))
