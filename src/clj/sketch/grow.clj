@@ -28,38 +28,41 @@
 
 (def default-settings (hash-map
                        :min-distance 3
-                       :max-distance 12
-                       :repulsion-radius 15
-                       :max-velocity 0.5
+                       :max-distance 6
+                       :repulsion-radius 7
+                       :max-velocity 0.01
                        :attraction-force 0.01
-                       :repulsion-force 0.4
-                       :allignment-force 0.45
+                       :repulsion-force 20
+                       :allignment-force 0.001
                        :node-injection-interval 10
-                       :brownian-motion-range 1
+                       :brownian-motion-range 1.0
                        :fill-color nil
                        :stroke-color nil
+                       :draw-edges false
                        :draw-nodes false
-                       :draw-random-injections? false
+                       :draw-all-random-injections? true
                        :bug-finder-mode? true
                        :uniform-node-settings? true
                        :hardend? false))
 
 (def path-settings (hash-map
-                    :min-distance 7
-                    :max-distance 15
-                    :repulsion-radius 12
-                    :max-velocity 0.05
+                    :min-distance 3
+                    :max-distance 6
+                    :repulsion-radius 7
+                    :max-velocity 0.01
                     :attraction-force 0.01
-                    :repulsion-force 0.5
-                    :allignment-force 3.45
+                    :repulsion-force 20
+                    :allignment-force 0.001
                     :node-injection-interval 10
-                    :brownian-motion-range 0.55
+                    :brownian-motion-range 1.0
                     :fill-color nil
                     :stroke-color nil
+                    :draw-edges true
                     :draw-nodes false
-                    :draw-random-injections? false
+                    :draw-all-random-injections? false
+                    :draw-new-random-injections? false
                     :bug-finder-mode? true
-                    :uniform-node-settings? false
+                    :uniform-node-settings? true
                     :hardend? false))
 
 (defn printPosition
@@ -110,32 +113,40 @@
 (declare getConnectedNodes)
 
 (defn drawPath
- "draws the path according to the current settings"
- [path]
- (let [nodes (:nodes path)
-       node-color (when (:bug-finder-mode? (:settings path))
-                   (colorSpectrum nodes))]
-      (doseq [node-index (range (count nodes))
-              :let [connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
-                    node (get nodes node-index)
-                    next (:next connected-nodes)
-                    prev (:prev connected-nodes)
-                    x (get (:pos node) 0)
-                    y (get (:pos node) 1)
-                    next-x (get (:pos next) 0)
-                    next-y (get (:pos next) 1)
-                    prev-x (get (:pos prev) 0)
-                    prev-y (get (:pos prev) 1)]]
-        (when (not (:is-fixed path))
-          (when (:bug-finder-mode? (:settings path))
-            (stroke (get node-color node-index) 360 360))
-          (when (:draw-nodes (:settings path))
-            (ellipse x y 2 2))
-          (when (:draw-random-injections? (:settings path))
-            (when (:is-random (:data node))
-              (ellipse x y 2 2)))
-          (when (not= next nil)
-            (line x y next-x next-y))))))
+  "draws the path according to the current settings"
+  [path]
+  (let [nodes (:nodes path)
+        node-color (when (:bug-finder-mode? (:settings path))
+                     (colorSpectrum nodes))]
+    (doseq [node-index (range (count nodes))
+            :let [connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
+                  node (get nodes node-index)
+                  next (:next connected-nodes)
+                  prev (:prev connected-nodes)
+                  x (get (:pos node) 0)
+                  y (get (:pos node) 1)
+                  next-x (get (:pos next) 0)
+                  next-y (get (:pos next) 1)
+                  prev-x (get (:pos prev) 0)
+                  prev-y (get (:pos prev) 1)]]
+      (when (not (:is-fixed path))
+        (when (:draw-edges (:settings path))
+         (when (not= next nil)
+          (line x y next-x next-y)))
+        (when (:bug-finder-mode? (:settings path))
+          (stroke (get node-color node-index) 360 360))
+        (when (:draw-nodes (:settings path))
+          (ellipse x y 2 2))
+        (when (:draw-all-random-injections? (:settings path))
+          (when (:is-random (:data node))
+            (ellipse x y 2 2)))
+        (when (:draw-new-random-injections? (:settings path))
+          (when (and (:is-random (:data node)) (= (:lifespan node) 0))
+            (stroke 255 0 255)
+            (ellipse x y 2 2)
+            (stroke (get node-color node-index) 360 360))))))
+  ;; (Thread/sleep 1000)
+  )
 
 (defn addPath
   "adds a given path to path-map"
@@ -231,9 +242,11 @@
   (mapv 
    (fn [node] (and (:is-fixed (:data node))  (not (:is-end (:data node))) (not (:hardend? (:settings node))))
      (update-in node [:settings] assoc
-                :repulsion-force (* (:repulsion-force (:settings node)) 1.003)
-                :max-velocity (* (:max-velocity (:settings node)) 0.995)
-                :hardend? true)) 
+                ;; :attraction-force (/ (:attraction-force (:settings node)) 2)
+                ;; :repulsion-force (* (:repulsion-force (:settings node)) 1.003)
+                ;; :max-velocity (* (:max-velocity (:settings node)) 0.995)
+                :hardend? true
+                )) 
    nodes))
 
 (defn attract
@@ -347,10 +360,10 @@
 
 (defn getMidpointNode
   "retrieves the middle node between two nodes"
-  [node-A node-B settings rand-inject is-fixed]
+  [node-A node-B settings is-random is-fixed]
   (let [new-x (/ (+ (get (:pos node-A) 0) (get (:pos node-B) 0)) 2)
         new-y (/ (+ (get (:pos node-A) 1) (get (:pos node-B) 1)) 2)]
-    (buildNode new-x new-y settings is-fixed false false rand-inject)))
+    (buildNode new-x new-y settings is-fixed false false is-random)))
 
 (defn applyAlignment
   [path node-index]
@@ -409,16 +422,18 @@
   "depreciates attraction-force after a specified "
   [node]
   (let [lifespan (:lifespan node)
-        start-hardening-num 10
+        start-hardening-num 0
         set-fixed-num 100
         depreciation-rate 0.999
-        appreciation-rate 1.01]
+        appreciation-rate 1.1]
     (if (and (>= lifespan start-hardening-num) (not (:is-fixed (:data node))))
       (if (> lifespan set-fixed-num)
         (update-in node [:data] assoc :is-fixed true)
         (update-in node [:settings] assoc
                   ;;  :attraction-force (* (:attraction-force (:settings node)) depreciation-rate)
-                   :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate)))
+                  ;;  :repulsion-force (* (:repulsion-force (:settings node)) appreciation-rate)
+                   :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate))
+        )
       node)))
 
 (defn splitEdges
@@ -442,6 +457,31 @@
               (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path)  midpoint-node))
               (swap! new-path assoc-in [:nodes] (insert (:nodes @new-path) index midpoint-node)))))))
     @new-path))
+
+(defn splitEdges-2
+  "searches for edges that are too long and splits them"
+  [path]
+  (let [nodes (:nodes path)]
+    (assoc-in path [:nodes]
+              (reduce
+               (fn [new-nodes node-index]
+                 (let [node (get nodes node-index)
+                       connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
+                       next-node (:next connected-nodes)
+                       prev-node (:prev connected-nodes)]
+                   (if (or (= next-node nil)
+                           (= prev-node nil))
+                     (conj new-nodes node)
+                     (let [distance (getDistance node prev-node)
+                           settings (if (:uniform-node-settings? (:settings path))
+                                      (:settings path)
+                                      (:settings node))]
+                       (if (< distance (:max-distance settings))
+                         (conj new-nodes node)
+                         (let [midpoint-node (getMidpointNode node prev-node settings false false)]
+                           (conj new-nodes midpoint-node node)))))))
+               []
+               (range (count nodes))))))
 
 (defn prunePaths
   "removes paths that are too small"
@@ -484,7 +524,7 @@
                        (:settings @new-path)
                        (:settings node))]
         (when (and (not= prev-node nil)
-                   (not (:is-end (:data prev-node)))
+                  ;;  (not (:is-end (:data prev-node)))
                    (not (:is-fixed (:data prev-node)))
                    (not (:to-remove (:data prev-node)))
                    (< distance (:min-distance settings)))
@@ -592,7 +632,7 @@
   [target addition]
   (apply conj (if (vector? addition) addition [addition]) target))
 
-(defn injectRandomNodeByCurvature-2
+(defn injectRandomNodeByCurvature
   [path]
   (let [nodes (:nodes path)]
     (assoc-in path [:nodes]
@@ -607,62 +647,28 @@
                            (:is-fixed (:data node)))
                      (conj new-nodes node)
                      (let [n (- (get (:pos next-node) 1) (get (:pos prev-node) 1))
-                           d (- (get (:pos next-node) 0) (get (:pos prev-node) 0))]
-                       (if (= d 0)
+                           d (- (get (:pos next-node) 0) (get (:pos prev-node) 0))
+                           d (if (= d 0)
+                               0.01
+                               d)
+                           a (/ n d)
+                           tan (Math/atan a)
+                           rad (Math/abs tan)
+                           deg (degrees rad)
+                           angle (Math/round deg)
+                          ;;  sas (println (get (:pos next-node) 1) (get (:pos prev-node) 1) "n" n (get (:pos next-node) 0) (get (:pos prev-node) 0) "d" d "a" a "tan" tan deg angle)
+                           ]
+                       (if (and (>= angle 20) (< (rand-int 100) 50))
                          (conj new-nodes node)
-                         (let [a (/ n d)
-                               tan (Math/atan a)
-                               rad (Math/abs tan)
-                               deg (degrees rad)
-                               angle (Math/round deg)]
-                           (if (<= angle 20)
-                             (conj new-nodes node)
-                             (let [settings (if (:uniform-node-settings? (:settings path))
-                                              (:settings path)
-                                              (:settings node))
-                                   next-midpoint-node (getMidpointNode node next-node settings true false)
-                                   prev-midpoint-node (getMidpointNode node prev-node settings true false)]
-                               (if (= node-index 0)
-                                 (conj (addFirstVec new-nodes prev-midpoint-node) node next-midpoint-node)
-                                 (conj new-nodes prev-midpoint-node next-midpoint-node))))))))))
-               []
-               (range (count nodes))))))
+                         (let [settings (if (:uniform-node-settings? (:settings path))
+                                          (:settings path)
+                                          (:settings node))
+                               next-midpoint-node (getMidpointNode node next-node settings true false)
+                               prev-midpoint-node (getMidpointNode node prev-node settings true false)]
 
-(defn injectFourRandomNodeByCurvature
-  [path]
-  (let [nodes (:nodes path)]
-    (assoc-in path [:nodes]
-              (reduce
-               (fn [new-nodes node-index]
-                 (let [node (get nodes node-index)
-                       connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
-                       next-node (:next connected-nodes)
-                       prev-node (:prev connected-nodes)]
-                   (if (or (= next-node nil)
-                           (= prev-node nil)
-                           (:is-fixed (:data node)))
-                     (conj new-nodes node)
-                     (let [n (- (get (:pos next-node) 1) (get (:pos prev-node) 1))
-                           d (- (get (:pos next-node) 0) (get (:pos prev-node) 0))]
-                       (if (= d 0)
-                         (conj new-nodes node)
-                         (let [a (/ n d)
-                               tan (Math/atan a)
-                               rad (Math/abs tan)
-                               deg (degrees rad)
-                               angle (Math/round deg)]
-                           (if (<= angle 20)
-                             (conj new-nodes node)
-                             (let [settings (if (:uniform-node-settings? (:settings path))
-                                              (:settings path)
-                                              (:settings node))
-                                   next-midpoint-node-1 (getMidpointNode node next-node settings true false)
-                                   next-midpoint-node-2 (getMidpointNode node next-midpoint-node-1 settings true false)
-                                   prev-midpoint-node-1 (getMidpointNode node prev-node settings true false)
-                                   prev-midpoint-node-2 (getMidpointNode node prev-midpoint-node-1 settings true false)]
-                               (if (= node-index 0)
-                                 (conj (addFirstVec (addFirstVec new-nodes prev-midpoint-node-1) prev-midpoint-node-2) node next-midpoint-node-1 next-midpoint-node-2)
-                                 (conj new-nodes prev-midpoint-node-2 prev-midpoint-node-1 next-midpoint-node-1 next-midpoint-node-2))))))))))
+                           (if (= node-index 0)
+                             (conj (addFirstVec new-nodes prev-midpoint-node) next-midpoint-node)
+                             (conj new-nodes prev-midpoint-node next-midpoint-node))))))))
                []
                (range (count nodes))))))
 
@@ -675,6 +681,11 @@
         deg (degrees rad)
         angle (Math/round deg)]
     angle))
+
+(defn splitPaths
+  "divides branches into new, individual paths"
+  [paths]
+  )
 
 (defn incrementLifespan
   "increments the lifespan of a given node"
@@ -712,25 +723,27 @@
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
 
         (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index)))
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (applyHardening (get (:nodes (get @new-paths path-index)) node-index)))
-
+        ;; (drawPath @new-paths)
+        ;; (Thread/sleep 1000)
+        ;; (swap! new-paths assoc-in [path-index :nodes node-index] (applyHardening (get (:nodes (get @new-paths path-index)) node-index)))
         )
       
-      (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
+      (swap! new-paths assoc-in [path-index] (splitEdges-2 (get @new-paths path-index)))
 
       (swap! new-paths assoc-in [path-index] (pruneNodes-2 (get @new-paths path-index)))
 
       (swap! new-paths assoc-in [path-index :nodes] (amplifyFixed (:nodes (get @new-paths path-index))))
-      (when (> (rand-int 100) 70)
-        (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature-2 (get @new-paths path-index)))))
+
+      (when (> (rand-int 100) 50)
+        (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index)))
+        ))
     ;; (Thread/sleep 1000)
     @new-paths))
 
 (defn init-growth ;;call it seed?
   "initializes growth"
   [w h]
-  (let [p-1 [(createTriangle 50 50 150 250 250 50)]
+  (let [p-1 [(createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
         p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
         paths (applyGrowth p-1 w h)]
     paths))

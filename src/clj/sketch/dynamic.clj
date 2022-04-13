@@ -17,8 +17,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 500)
-(def window-height 500)
+(def window-width 300)
+(def window-height 300)
 
 (def img-url "abstract-painting.jpg")
 (def img (ref nil))
@@ -29,7 +29,7 @@
   ;; (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
   (stroke 340 100 100)
-  (stroke-weight 3)
+  (stroke-weight 2)
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
