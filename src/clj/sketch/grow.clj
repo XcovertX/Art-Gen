@@ -20,7 +20,9 @@
                  brownian
                  alignment
                  node-injection-interval
-                 is-fixed])
+                 is-fixed
+                 age
+                 mature])
 
 (def node-map (atom {:nodes []}))
 (defrecord Node [pos settings data lifespan])
@@ -162,7 +164,7 @@
 (defn buildPath
   "builds a path"
   [nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed]
-  (Path. nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed))
+  (Path. nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed 0 false))
 
 (defn addNode
   "atomically adds a node to node-map"
@@ -682,10 +684,50 @@
         angle (Math/round deg)]
     angle))
 
+(defn incPathAge
+  "increments a given path's age"
+  [path]
+  (assoc-in path [:age] inc))
+
+(defn indexFixed
+  "Returns a lazy sequence of [index, item] pairs, where items come
+  from 's' and indexes count up from zero.
+
+  (indexed '(a b c d))  =>  ([0 a] [1 b] [2 c] [3 d])"
+  [node]
+  (map vector (iterate inc 0) (:if-fixed (:data node))))
+
+(defn fixedPositions
+  "Returns a lazy sequence containing the positions at which pred
+   is true for items in coll."
+  [coll]
+  (first (for [[idx elt] (indexed coll) :when (= elt true)] idx)))
+
+;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
+
 (defn splitPaths
   "divides branches into new, individual paths"
   [paths]
-  )
+  (reduce
+   (fn [new-paths path-index]
+     (let [path (get paths path-index)
+           start-degrade-age 50]
+       (if (< (:age path) start-degrade-age)
+         (conj new-paths (incPathAge path))
+         (let [aged-path (incPathAge path)
+               nodes (:nodes aged-path)
+               fixed-nodes (filterv #(:is-fixed (:data %)) nodes)]
+           (if (or (= (count nodes) (count fixed-nodes)) (<= (count nodes) 1))
+             (conj new-paths (assoc-in aged-path [:mature] true))
+             (let [fixed-node-positions (fixedPositions nodes)]
+              (conj
+               (mapv
+                (fn [sub-path-coll fixed-index]
+                  (conj sub-path-coll (subvec nodes (get fixed-node-positions fixed-index) (get fixed-node-positions (+ fixed-index 1)))))
+                []
+                (range (- (count fixed-node-positions) 1))))))))))
+   []
+   (range (count paths))))
 
 (defn incrementLifespan
   "increments the lifespan of a given node"
@@ -735,8 +777,9 @@
       (swap! new-paths assoc-in [path-index :nodes] (amplifyFixed (:nodes (get @new-paths path-index))))
 
       (when (> (rand-int 100) 50)
-        (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index)))
-        ))
+        (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
+      
+      (swap! new-paths assoc @new-paths))
     ;; (Thread/sleep 1000)
     @new-paths))
 
