@@ -568,13 +568,24 @@
     (buildNode x3 y3 default-settings false true false false))
    path-settings true [] true 0.45 10 false))
 
-(defn createFixedTriangle
+(defn createPathWithFixedNodes
   []
   (buildPath
    (vector
-    (buildNode 600 300 default-settings false true false false)
-    (buildNode 550 400 default-settings false false false false)
-    (buildNode 650 600 default-settings false true false false))
+    (buildNode 50 50 default-settings true false false false)
+    (buildNode 150 70 default-settings false false false false)
+    (buildNode 120 70 default-settings false false false false)
+    (buildNode 150 900 default-settings false false false false)
+    (buildNode 10 70 default-settings false false false false)
+    (buildNode 30 40 default-settings false false false false)
+    (buildNode 150 70 default-settings false false false false)
+    (buildNode 100 50 default-settings true false false false)
+    (buildNode 50 370 default-settings false false false false)
+    (buildNode 179 270 default-settings false false false false)
+    (buildNode 122 701 default-settings true false false false)
+    (buildNode 187 222 default-settings false false false false)
+    (buildNode 200 200 default-settings false false false false)
+    (buildNode 75 125 default-settings true false false false))
    path-settings true [] true 0.45 10 true))
 
 
@@ -687,21 +698,21 @@
 (defn incPathAge
   "increments a given path's age"
   [path]
-  (assoc-in path [:age] inc))
+  (update-in path [:age] inc))
 
 (defn indexFixed
   "Returns a lazy sequence of [index, item] pairs, where items come
   from 's' and indexes count up from zero.
 
   (indexed '(a b c d))  =>  ([0 a] [1 b] [2 c] [3 d])"
-  [node]
-  (map vector (iterate inc 0) (:if-fixed (:data node))))
+  [nodes]
+  (map vector (iterate inc 0) (reduce conj [] (mapv #(:is-fixed (:data %)) nodes))))
 
 (defn fixedPositions
   "Returns a lazy sequence containing the positions at which pred
    is true for items in coll."
-  [coll]
-  (first (for [[idx elt] (indexed coll) :when (= elt true)] idx)))
+  [pred coll]
+  (into [] (for [[idx elt] (indexFixed coll) :when (pred elt)] idx)))
 
 ;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
 
@@ -711,7 +722,7 @@
   (reduce
    (fn [new-paths path-index]
      (let [path (get paths path-index)
-           start-degrade-age 50]
+           start-degrade-age 0]
        (if (< (:age path) start-degrade-age)
          (conj new-paths (incPathAge path))
          (let [aged-path (incPathAge path)
@@ -719,15 +730,22 @@
                fixed-nodes (filterv #(:is-fixed (:data %)) nodes)]
            (if (or (= (count nodes) (count fixed-nodes)) (<= (count nodes) 1))
              (conj new-paths (assoc-in aged-path [:mature] true))
-             (let [fixed-node-positions (fixedPositions nodes)]
-              (conj
-               (mapv
-                (fn [sub-path-coll fixed-index]
-                  (conj sub-path-coll (subvec nodes (get fixed-node-positions fixed-index) (get fixed-node-positions (+ fixed-index 1)))))
-                []
-                (range (- (count fixed-node-positions) 1))))))))))
+             (let [fixed-node-positions (fixedPositions #{true} nodes)]
+               (into new-paths
+                     (reduce
+                      (fn [sub-path-coll fixed-index]
+                        (conj sub-path-coll
+                              (buildPath
+                               (subvec nodes (get fixed-node-positions fixed-index) (+ (get fixed-node-positions (+ fixed-index 1)) 1))
+                               (:settings path) (:is-closed path) (:bounds path) (:brownian path) (:alignment path) (:node-injection-time path) (:is-fixed path))))
+                      []
+                      (range (- (count fixed-node-positions) 1))))))))))
    []
    (range (count paths))))
+
+(defn testSplitPaths
+  []
+  (splitPaths [(createPathWithFixedNodes)]))
 
 (defn incrementLifespan
   "increments the lifespan of a given node"
