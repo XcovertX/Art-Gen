@@ -22,7 +22,7 @@
                  node-injection-interval
                  is-fixed
                  age
-                 mature])
+                 is-mature])
 
 (def node-map (atom {:nodes []}))
 (defrecord Node [pos settings data lifespan])
@@ -44,7 +44,7 @@
                        :draw-nodes false
                        :draw-all-random-injections? true
                        :bug-finder-mode? true
-                       :uniform-node-settings? true
+                       :uniform-node-settings? false
                        :hardend? false))
 
 (def path-settings (hash-map
@@ -64,7 +64,7 @@
                     :draw-all-random-injections? false
                     :draw-new-random-injections? false
                     :bug-finder-mode? true
-                    :uniform-node-settings? true
+                    :uniform-node-settings? false
                     :hardend? false))
 
 (defn printPosition
@@ -230,7 +230,7 @@
                             (/ (:brownian-motion-range (:settings node)) 2)))
          new-y (+ y (random (- 0 (/ ((:settings node) :brownian-motion-range) 2))
                             (/ (:brownian-motion-range (:settings node)) 2)))]
-    (assoc node :pos [new-x new-y]))
+     (assoc node :pos [new-x new-y]))
     node))
 
 (defn removeFixed
@@ -279,7 +279,8 @@
         next-node (:next connected-nodes)
         previous-node (:prev connected-nodes)
         new-node (if (and (not= next-node nil)
-                          (not (:is-fixed (:data new-node))))
+                          (not (:is-fixed (:data new-node)))
+                          )
                    (attract new-node next-node)
                    new-node)
         new-node (if (and (not= previous-node nil)
@@ -356,7 +357,10 @@
                     (- 0 (:repulsion-force settings)))
             y (lerp (get (:pos @node) 1)
                     (get (:pos neighbor) 1)
-                    (- 0 (:repulsion-force settings)))]
+                    (- 0 (:repulsion-force settings)))
+            ;; x (/ (+ x (:x (:next-position (:data node)))) 2)
+            ;; y (/ (+ y (:y (:next-position (:data node)))) 2)
+            ]
         (swap! node update-in [:data :next-position] assoc :x x :y y)))
     @node))
 
@@ -392,8 +396,6 @@
         node)
       node)))
 
-(declare training-set-2)
-
 (defn inBounds
   [[x y] node]
   (if (and (= x (get (:pos node) 0)) (= y (get (:pos node) 1)))
@@ -422,45 +424,33 @@
 
 (defn applyHardening
   "depreciates attraction-force after a specified "
-  [node]
-  (let [lifespan (:lifespan node)
-        start-hardening-num 0
-        set-fixed-num 100
-        depreciation-rate 0.999
-        appreciation-rate 1.1]
-    (if (and (>= lifespan start-hardening-num) (not (:is-fixed (:data node))))
-      (if (> lifespan set-fixed-num)
-        (update-in node [:data] assoc :is-fixed true)
-        (update-in node [:settings] assoc
-                  ;;  :attraction-force (* (:attraction-force (:settings node)) depreciation-rate)
-                  ;;  :repulsion-force (* (:repulsion-force (:settings node)) appreciation-rate)
-                   :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate))
-        )
-      node)))
+  [path]
+  (let [age (:age path)
+        start-hardening-num 100
+        set-fixed-num 1000
+        depreciation-rate 0.9999]
+    (if (or (:is-mature path) (< age start-hardening-num))
+     path
+      (if (>= age set-fixed-num)
+        (let [a (assoc-in path [:nodes (rand-int (count (:nodes path))) :data :is-fixed] true)]
+          ;; (println "a node!!:" a)
+          a)
+        (assoc-in path [:nodes]
+                (reduce
+                 (fn [new-nodes node]
+                   (conj new-nodes
+                         (update-in node [:settings] assoc
+                                    :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate)
+                                    :max-velocity (* (:max-velocity (:settings node)) depreciation-rate)
+
+                                    ;; :repulsion-force (* (:repulsion-force (:settings node)) depreciation-rate)
+                                    ;; :attraction-force (* (:attraction-force (:settings node)) depreciation-rate)
+                                    ;; :allignment-force (* (:allignment-force (:settings node)) depreciation-rate)
+                                    )))
+                 []
+                 (:nodes path)))))))
 
 (defn splitEdges
-  "searches for edges that are too long and splits them"
-  [path]
-  (let [new-path (atom path)]
-    (doseq [node (:nodes path)]
-      (let [index (positions #{node} (:nodes @new-path))
-            length (count @new-path)
-            connected-nodes (getConnectedNodes (:nodes @new-path) index (:is-closed @new-path))
-            prev-node (:prev connected-nodes)
-            next-node (:next connected-nodes)
-            distance (getDistance node prev-node)
-            settings (if (:uniform-node-settings? (:settings @new-path))
-                       (:settings @new-path)
-                       (:settings node))]
-        (when (and (not= prev-node nil)
-                   (>= distance (:max-distance settings)))
-          (let [midpoint-node (getMidpointNode node prev-node settings false false)]
-            (if (= index 0)
-              (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path)  midpoint-node))
-              (swap! new-path assoc-in [:nodes] (insert (:nodes @new-path) index midpoint-node)))))))
-    @new-path))
-
-(defn splitEdges-2
   "searches for edges that are too long and splits them"
   [path]
   (let [nodes (:nodes path)]
@@ -491,28 +481,6 @@
   (filter (fn [path] (> (count (:nodes path)) 1)) paths))
 
 (defn pruneNodes
-  "removes nodes that are too close"
-   [path]
-(let [new-path (atom path)]
-  (doseq [node (:nodes path)]
-    (let [index (positions #{node} (:nodes @new-path))
-          length (count @new-path)
-          connected-nodes (getConnectedNodes (:nodes @new-path) index (:is-closed @new-path))
-          prev-node (:prev connected-nodes)
-          distance (getDistance node prev-node)
-          settings (if (:uniform-node-settings? (:settings @new-path))
-                     (:settings @new-path)
-                     (:settings node))]
-      (when (and (not= prev-node nil)
-                 (< distance (:min-distance settings)))
-        (if (= index 0)
-          (when (not (:is-fixed (:data (get (:nodes @new-path) (- length 1)))))
-            (swap! new-path assoc-in [:nodes] (eject (:nodes @new-path) (- length 1))))
-          (when (not (:is-fixed (:data (get (:nodes @new-path) (- index 1)))))
-            (swap! new-path assoc-in [:nodes] (eject (:nodes @new-path) (- index 1))))))))
-  @new-path))
-
-(defn pruneNodes-2
   "removes nodes that are too close"
   [path]
   (let [new-path (atom path)]
@@ -563,10 +531,13 @@
   [x1 y1 x2 y2 x3 y3]
   (buildPath
    (vector
-    (buildNode x1 y1 default-settings false true false false)
+    (buildNode x1 y1 default-settings true true false false)
+    (buildNode 80 40 default-settings false false false false)
+    (buildNode 50 60 default-settings false false false false)
+    (buildNode 70 80 default-settings false false false false)
     (buildNode x2 y2 default-settings false false false false)
-    (buildNode x3 y3 default-settings false true false false))
-   path-settings true [] true 0.45 10 false))
+    (buildNode x3 y3 default-settings true true false false))
+   path-settings false [] true 0.45 10 false))
 
 (defn createPathWithFixedNodes
   []
@@ -728,18 +699,20 @@
          (let [aged-path (incPathAge path)
                nodes (:nodes aged-path)
                fixed-nodes (filterv #(:is-fixed (:data %)) nodes)]
-           (if (or (= (count nodes) (count fixed-nodes)) (<= (count nodes) 1))
-             (conj new-paths (assoc-in aged-path [:mature] true))
-             (let [fixed-node-positions (fixedPositions #{true} nodes)]
-               (into new-paths
-                     (reduce
-                      (fn [sub-path-coll fixed-index]
-                        (conj sub-path-coll
-                              (buildPath
-                               (subvec nodes (get fixed-node-positions fixed-index) (+ (get fixed-node-positions (+ fixed-index 1)) 1))
-                               (:settings path) (:is-closed path) (:bounds path) (:brownian path) (:alignment path) (:node-injection-time path) (:is-fixed path))))
-                      []
-                      (range (- (count fixed-node-positions) 1))))))))))
+           (if (= (count nodes) (count fixed-nodes))
+             (conj new-paths (assoc-in aged-path [:is-mature] true))
+             (if (<= (count fixed-nodes) 2)
+               (conj new-paths aged-path)
+               (let [fixed-node-positions (fixedPositions #{true} nodes)]
+                 (into new-paths
+                       (reduce
+                        (fn [sub-path-coll fixed-index]
+                          (conj sub-path-coll
+                                (buildPath
+                                 (subvec nodes (get fixed-node-positions fixed-index) (+ (get fixed-node-positions (+ fixed-index 1)) 1))
+                                 path-settings false (:bounds path) (:brownian path) (:alignment path) (:node-injection-time path) (:is-fixed path))))
+                        []
+                        (range (- (count fixed-node-positions) 1)))))))))))
    []
    (range (count paths))))
 
@@ -751,6 +724,8 @@
   "increments the lifespan of a given node"
   [node]
   (update-in node [:lifespan] inc))
+
+
 
 (defn grow
   "moves the node to new spot"
@@ -782,23 +757,27 @@
 
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index)))
-        ;; (drawPath @new-paths)
-        ;; (Thread/sleep 1000)
-        ;; (swap! new-paths assoc-in [path-index :nodes node-index] (applyHardening (get (:nodes (get @new-paths path-index)) node-index)))
-        )
-      
-      (swap! new-paths assoc-in [path-index] (splitEdges-2 (get @new-paths path-index)))
+        (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
 
-      (swap! new-paths assoc-in [path-index] (pruneNodes-2 (get @new-paths path-index)))
+      (swap! new-paths assoc-in [path-index] (applyHardening (get @new-paths path-index)))
+
+      (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
+
+      (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
 
       (swap! new-paths assoc-in [path-index :nodes] (amplifyFixed (:nodes (get @new-paths path-index))))
 
       (when (> (rand-int 100) 50)
         (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
-      
-      (swap! new-paths assoc @new-paths))
-    ;; (Thread/sleep 1000)
+
+      (swap! new-paths update-in [path-index :age] inc)
+      (reset! new-paths (splitPaths @new-paths))
+      ;; (doseq [path @new-paths]
+      ;;   (println path)
+      ;;   (println " "))
+      )
+    ;; (println (count @new-paths))
+    ;; (Thread/sleep 5000)
     @new-paths))
 
 (defn init-growth ;;call it seed?
