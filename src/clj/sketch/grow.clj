@@ -42,6 +42,7 @@
                        :stroke-color nil
                        :draw-edges false
                        :draw-nodes false
+                       :draw-fixed-nodes true
                        :draw-all-random-injections? true
                        :bug-finder-mode? true
                        :uniform-node-settings? false
@@ -61,6 +62,7 @@
                     :stroke-color nil
                     :draw-edges true
                     :draw-nodes false
+                    :draw-fixed-nodes true
                     :draw-all-random-injections? false
                     :draw-new-random-injections? false
                     :bug-finder-mode? true
@@ -139,6 +141,11 @@
           (stroke (get node-color node-index) 360 360))
         (when (:draw-nodes (:settings path))
           (ellipse x y 2 2))
+        (when (:draw-fixed-nodes (:settings path))
+          (when (:is-fixed (:data node))
+            (stroke 255 0 255)
+            (ellipse x y 2 2)
+            (stroke (get node-color node-index) 360 360)))
         (when (:draw-all-random-injections? (:settings path))
           (when (:is-random (:data node))
             (ellipse x y 2 2)))
@@ -426,29 +433,35 @@
   "depreciates attraction-force after a specified "
   [path]
   (let [age (:age path)
-        start-hardening-num 100
-        set-fixed-num 1000
-        depreciation-rate 0.9999]
+        start-hardening-num 300
+        set-fixed-num 500
+        depreciation-rate 0.99
+        hard-freq 10
+        nodes (:nodes path)]
     (if (or (:is-mature path) (< age start-hardening-num))
-     path
+      path
       (if (>= age set-fixed-num)
-        (let [a (assoc-in path [:nodes (rand-int (count (:nodes path))) :data :is-fixed] true)]
-          ;; (println "a node!!:" a)
-          a)
+        (assoc-in path [:nodes (rand-int (count (:nodes path))) :data :is-fixed] true)
         (assoc-in path [:nodes]
-                (reduce
-                 (fn [new-nodes node]
-                   (conj new-nodes
-                         (update-in node [:settings] assoc
-                                    :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate)
-                                    :max-velocity (* (:max-velocity (:settings node)) depreciation-rate)
-
-                                    ;; :repulsion-force (* (:repulsion-force (:settings node)) depreciation-rate)
-                                    ;; :attraction-force (* (:attraction-force (:settings node)) depreciation-rate)
-                                    ;; :allignment-force (* (:allignment-force (:settings node)) depreciation-rate)
-                                    )))
-                 []
-                 (:nodes path)))))))
+                  (reduce
+                   (fn [new-nodes node-index]
+                     (let [node (get nodes node-index)
+                           connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
+                           next-node (:next connected-nodes)
+                           prev-node (:prev connected-nodes)]
+                       (if (or (= next-node nil)
+                               (= prev-node nil))
+                         (conj new-nodes node)
+                         (if (and (= (mod hard-freq node-index) 0) (or (:is-fixed (:data prev-node)) (:is-fixed (:data next-node))))
+                           (conj new-nodes (update-in node [:data] assoc :is-fixed true))
+                           (conj new-nodes node)
+                          ;;  (conj new-nodes
+                          ;;        (update-in node [:settings] assoc
+                          ;;                   :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate)
+                          ;;                   :max-velocity (* (:max-velocity (:settings node)) depreciation-rate)))
+                           ))))
+                   []
+                   (range (count nodes))))))))
 
 (defn splitEdges
   "searches for edges that are too long and splits them"
@@ -558,6 +571,20 @@
     (buildNode 200 200 default-settings false false false false)
     (buildNode 75 125 default-settings true false false false))
    path-settings true [] true 0.45 10 true))
+
+(defn createCirclePath
+  [x1 y1 x2 y2 x3 y3 x4 y4]
+  (buildPath
+   (vector
+    (buildNode x1 y1 default-settings true true false false)
+    (buildNode (+ x1 (/ (- x2 x1) 2)) (+ y1 (/ (- y2 y1) 2)) default-settings false false false false)
+    (buildNode x2 y2 default-settings false false false false)
+    (buildNode (+ x1 (/ (- x2 x1) 2)) (+ y2 (/ (- y3 y2) 2)) default-settings false false false false)
+    (buildNode x3 y3 default-settings false false false false)
+    (buildNode (+ x4 (/ (- x2 x4) 2)) (+ y2 (/ (- y3 y2) 2)) default-settings false false false false)
+    (buildNode x4 y4 default-settings false false false false)
+    (buildNode (+ x4 (/ (- x2 x4) 2)) (+ y1 (/ (- y2 y1) 2)) default-settings true true false false))
+   path-settings false [] true 0.45 10 false))
 
 
 (defn createTriangle-2
@@ -701,7 +728,7 @@
                fixed-nodes (filterv #(:is-fixed (:data %)) nodes)]
            (if (= (count nodes) (count fixed-nodes))
              (conj new-paths (assoc-in aged-path [:is-mature] true))
-             (if (<= (count fixed-nodes) 2)
+             (if (or (<= (count fixed-nodes) 1) (even? (count fixed-nodes)))
                (conj new-paths aged-path)
                (let [fixed-node-positions (fixedPositions #{true} nodes)]
                  (into new-paths
@@ -710,7 +737,7 @@
                           (conj sub-path-coll
                                 (buildPath
                                  (subvec nodes (get fixed-node-positions fixed-index) (+ (get fixed-node-positions (+ fixed-index 1)) 1))
-                                 path-settings false (:bounds path) (:brownian path) (:alignment path) (:node-injection-time path) (:is-fixed path))))
+                                 path-settings (:is-closed path) (:bounds path) (:brownian path) (:alignment path) (:node-injection-time path) (:is-fixed path))))
                         []
                         (range (- (count fixed-node-positions) 1)))))))))))
    []
@@ -765,7 +792,7 @@
 
       (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
 
-      (swap! new-paths assoc-in [path-index :nodes] (amplifyFixed (:nodes (get @new-paths path-index))))
+      ;; (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
 
       (when (> (rand-int 100) 50)
         (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
@@ -782,8 +809,10 @@
 
 (defn init-growth ;;call it seed?
   "initializes growth"
-  [w h]
+  [w h] 
   (let [p-1 [(createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
         p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
-        paths (applyGrowth p-1 w h)]
+        p-3 [(createCirclePath 150 100 200 150 150 200 100 150)]
+        paths (applyGrowth p-3 w h)]
+    (println p-3)
     paths))
