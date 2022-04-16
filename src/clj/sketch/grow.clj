@@ -40,10 +40,10 @@
                        :brownian-motion-range 1.0
                        :fill-color nil
                        :stroke-color nil
-                       :draw-edges false
-                       :draw-nodes false
-                       :draw-fixed-nodes true
-                       :draw-all-random-injections? true
+                       :draw-edges true
+                       :draw-nodes true
+                       :draw-fixed-nodes false
+                       :draw-all-random-injections? false
                        :bug-finder-mode? true
                        :uniform-node-settings? false
                        :hardend? false))
@@ -57,12 +57,12 @@
                     :repulsion-force 20
                     :allignment-force 0.001
                     :node-injection-interval 10
-                    :brownian-motion-range 1.0
+                    :brownian-motion-range 3.0
                     :fill-color nil
                     :stroke-color nil
                     :draw-edges true
-                    :draw-nodes false
-                    :draw-fixed-nodes true
+                    :draw-nodes true
+                    :draw-fixed-nodes false
                     :draw-all-random-injections? false
                     :draw-new-random-injections? false
                     :bug-finder-mode? true
@@ -189,17 +189,21 @@
 (defn getConnectedNodes ;; remove dependency on indicies
   "retrieves all nodes connected to a given node"
   [nodes index is-closed]
-  (if (not= index nil)
+  (if (or (not= index nil) (< (count nodes) 2))
     (let [length (count nodes)
-          previous-node (if (= index 0)
-                          (when is-closed
-                            (get nodes (- length 1)))
-                          (get nodes (- index 1)))
-          next-node (if (= index (- length 1))
-                      (when is-closed
-                        (get nodes 0))
-                      (get nodes (+ index 1)))]
-      {:prev previous-node :next next-node})
+          prev-node (if (= length 2)
+                      (first nodes)
+                      (if (= index 0)
+                        (when is-closed
+                          (get nodes (- length 1)))
+                        (get nodes (- index 1))))
+          next-node (if (= length 2)
+                      (last nodes)
+                      (if (= index (- length 1))
+                        (when is-closed
+                          (get nodes 0))
+                        (get nodes (+ index 1))))]
+      {:prev prev-node :next next-node})
     {:prev nil :next nil}))
 
 
@@ -429,9 +433,12 @@
       (assoc-in node [:data :is-fixed] true)
       node)))
 
+(def counter (atom {:i 0}))
+
 (defn applyHardening
   "depreciates attraction-force after a specified "
   [path]
+  (swap! counter update-in [:i] inc)
   (let [age (:age path)
         start-hardening-num 300
         set-fixed-num 500
@@ -452,7 +459,7 @@
                        (if (or (= next-node nil)
                                (= prev-node nil))
                          (conj new-nodes node)
-                         (if (and (= (mod hard-freq node-index) 0) (or (:is-fixed (:data prev-node)) (:is-fixed (:data next-node))))
+                         (if (and (= (mod hard-freq (:i @counter)) 0) (or (:is-fixed (:data prev-node)) (:is-fixed (:data next-node))))
                            (conj new-nodes (update-in node [:data] assoc :is-fixed true))
                            (conj new-nodes node)
                           ;;  (conj new-nodes
@@ -507,7 +514,7 @@
                        (:settings @new-path)
                        (:settings node))]
         (when (and (not= prev-node nil)
-                  ;;  (not (:is-end (:data prev-node)))
+                   (not (:is-end (:data prev-node)))
                    (not (:is-fixed (:data prev-node)))
                    (not (:to-remove (:data prev-node)))
                    (< distance (:min-distance settings)))
@@ -544,10 +551,6 @@
   [x1 y1 x2 y2 x3 y3]
   (buildPath
    (vector
-    (buildNode x1 y1 default-settings true true false false)
-    (buildNode 80 40 default-settings false false false false)
-    (buildNode 50 60 default-settings false false false false)
-    (buildNode 70 80 default-settings false false false false)
     (buildNode x2 y2 default-settings false false false false)
     (buildNode x3 y3 default-settings true true false false))
    path-settings false [] true 0.45 10 false))
@@ -743,9 +746,9 @@
    []
    (range (count paths))))
 
-(defn testSplitPaths
-  []
-  (splitPaths [(createPathWithFixedNodes)]))
+;; (defn testSplitPaths
+;;   []
+;;   (splitPaths [(createPathWithFixedNodes)]))
 
 (defn incrementLifespan
   "increments the lifespan of a given node"
@@ -773,37 +776,52 @@
   (let [new-paths (atom paths)]
     (doseq [path-index (range (count @new-paths))]
       (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
-
+        ;; (drawPath (get @new-paths path-index))
+        ;; (println "start" @new-paths)
+        ;; (Thread/sleep 1000)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
-
+        ;; (drawPath (get @new-paths path-index))
+        ;; (println "brown" @new-paths)
+        ;; (Thread/sleep 1000)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAttraction (get @new-paths path-index) node-index))
-
+        ;; (drawPath (get @new-paths path-index))
+        ;; (Thread/sleep 1000)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyRepulsion @new-paths path-index node-index))
-
+        ;; (drawPath (get @new-paths path-index))
+        ;; (Thread/sleep 1000)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAlignment (get @new-paths path-index) node-index))
-
+        ;; (drawPath (get @new-paths path-index))
+        ;; (Thread/sleep 1000)
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
-
+        ;; (drawPath (get @new-paths path-index))
+        ;; (Thread/sleep 1000)
         (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
-
-      (swap! new-paths assoc-in [path-index] (applyHardening (get @new-paths path-index)))
+      ;; (drawPath (get @new-paths path-index))
+      ;; (Thread/sleep 1000)
+      ;; (swap! new-paths assoc-in [path-index] (applyHardening (get @new-paths path-index)))
 
       (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
-
+      ;; (drawPath (get @new-paths path-index))
+      ;; (Thread/sleep 1000)
       (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
-
-      ;; (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
-
+      ;; (drawPath (get @new-paths path-index))
+      ;; (Thread/sleep 1000)
+      (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
+      ;; (drawPath (get @new-paths path-index))
+      ;; (Thread/sleep 1000)
       (when (> (rand-int 100) 50)
         (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
-
+      ;; (drawPath (get @new-paths path-index))
+      ;; (Thread/sleep 1000)
       (swap! new-paths update-in [path-index :age] inc)
-      (reset! new-paths (splitPaths @new-paths))
+      ;; (drawPath (get @new-paths path-index))
+      ;; (Thread/sleep 1000)
+      ;; (reset! new-paths (splitPaths @new-paths))
       ;; (doseq [path @new-paths]
       ;;   (println path)
       ;;   (println " "))
       )
-    ;; (println (count @new-paths))
+    ;; (println @new-paths)
     ;; (Thread/sleep 5000)
     @new-paths))
 
@@ -813,6 +831,5 @@
   (let [p-1 [(createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
         p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
         p-3 [(createCirclePath 150 100 200 150 150 200 100 150)]
-        paths (applyGrowth p-3 w h)]
-    (println p-3)
+        paths (applyGrowth p-2 w h)]
     paths))

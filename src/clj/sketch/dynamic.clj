@@ -17,7 +17,7 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 300)
+(def window-width 1000)
 (def window-height 300)
 
 (def img-url "abstract-painting.jpg")
