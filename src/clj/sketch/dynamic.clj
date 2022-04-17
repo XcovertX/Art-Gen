@@ -28,7 +28,7 @@
 (defn setup []
   ;; (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
-  (stroke 340 100 100)
+  (stroke 360 0 360)
   (stroke-weight 2)
   (background 0 0 0)
   (reset! p {:paths {}})

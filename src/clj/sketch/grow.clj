@@ -22,7 +22,8 @@
                  node-injection-interval
                  is-fixed
                  age
-                 is-mature])
+                 is-mature
+                 is-divide-ready])
 
 (def node-map (atom {:nodes []}))
 (defrecord Node [pos settings data lifespan])
@@ -61,8 +62,8 @@
                     :fill-color nil
                     :stroke-color nil
                     :draw-edges true
-                    :draw-nodes true
-                    :draw-fixed-nodes false
+                    :draw-nodes false
+                    :draw-fixed-nodes true
                     :draw-all-random-injections? false
                     :draw-new-random-injections? false
                     :bug-finder-mode? true
@@ -102,8 +103,6 @@
   (first (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
 
 ;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
-
-(def i (atom 1))
 
 (defn colorSpectrum
   "changes the color of node output to RGB spectrum R: @ 0 V: @ length of vector"
@@ -171,7 +170,7 @@
 (defn buildPath
   "builds a path"
   [nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed]
-  (Path. nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed 0 false))
+  (Path. nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed 0 false false))
 
 (defn addNode
   "atomically adds a node to node-map"
@@ -247,7 +246,7 @@
 (defn removeFixed
   "removes all fixed nodes"
   [nodes]
-  (filterv #(or (not (:is-fixed (:data %)))  (:is-end (:data %))) nodes))
+  (filterv #(or (not (:is-fixed (:data %))) (:is-end (:data %))) nodes))
 
 (defn amplifyFixed
   "removes all fixed nodes"
@@ -717,7 +716,39 @@
 
 ;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
 
-(defn splitPaths
+(defn dividePathsOnHorizontalLine
+  "divides path into new subpaths at every point that intersects with a given height"
+  [path height]
+  (let [nodes (:nodes path)]
+   (reduce
+    (fn [new-nodes node-index]
+      (let [node (get nodes node-index)
+            connected-nodes (getConnectedNodes nodes node-index (:is-closed path))
+            next-node (:next connected-nodes)]
+        (if (not= next-node nil)
+          (if (or
+               (and (<= (get (:pos node) 1) height) (>= (get (:pos next-node) 1) height))
+               (and (>= (get (:pos node) 1) height) (<= (get (:pos next-node) 1) height)))
+            (conj new-nodes (update-in node [:data] assoc :is-fixed true :is-end true))
+            (conj new-nodes node))
+          (conj new-nodes node))))
+    []
+    (range (count nodes)))))
+
+(defn dividePathsOnVerticalLine
+  "divides path into new subpaths at every point that intersects with a given height"
+  [path verticle]
+  (let [nodes (:nodes path)]
+    (reduce
+     (fn [new-nodes node]
+       (if (not= (get (:pos nodes) 0) verticle)
+         (conj new-nodes node)
+         (conj new-nodes (update-in node [:data] assoc :is-fixed true))))
+     []
+     nodes))
+  )
+
+(defn buildSubPaths
   "divides branches into new, individual paths"
   [paths]
   (reduce
@@ -731,8 +762,8 @@
                fixed-nodes (filterv #(:is-fixed (:data %)) nodes)]
            (if (= (count nodes) (count fixed-nodes))
              (conj new-paths (assoc-in aged-path [:is-mature] true))
-             (if (or (<= (count fixed-nodes) 1) (even? (count fixed-nodes)))
-               (conj new-paths aged-path)
+             (if (<= (count fixed-nodes) 1)
+              (conj new-paths aged-path)
                (let [fixed-node-positions (fixedPositions #{true} nodes)]
                  (into new-paths
                        (reduce
@@ -770,6 +801,8 @@
           new-y (Math/round (lerp y next-y max-velocity))]
       (incrementLifespan (assoc-in node [:pos] [new-x new-y])))
     node))
+
+(def div-complete (atom {:div false}))
 
 (defn applyGrowth
   [paths width height]
@@ -814,11 +847,13 @@
       ;; (drawPath (get @new-paths path-index))
       ;; (Thread/sleep 1000)
       (swap! new-paths update-in [path-index :age] inc)
-      ;; (drawPath (get @new-paths path-index))
-      ;; (Thread/sleep 1000)
-      ;; (reset! new-paths (splitPaths @new-paths))
-      ;; (doseq [path @new-paths]
-      ;;   (println path)
+      (when (and not :div @div-complete (= (:age (get @new-paths path-index)) 200))
+        (swap! new-paths assoc-in [path-index :nodes] (dividePathsOnHorizontalLine (get @new-paths path-index) (int (/ height 2))))
+        (reset! new-paths (buildSubPaths @new-paths))
+        (swap! div-complete assoc-in [:div] true)
+        ;; (println @new-paths)
+        )
+      (println (:age (get @new-paths path-index)))
       ;;   (println " "))
       )
     ;; (println @new-paths)
