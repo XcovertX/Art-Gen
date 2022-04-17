@@ -108,9 +108,6 @@
   "changes the color of node output to RGB spectrum R: @ 0 V: @ length of vector"
   [nodes]
   (let [multiplier (/ 256 (count nodes))]
-    ;; (if (mod 100000 @i)
-    ;;   (println (mapv #(ceil (* multiplier %)) (range (count nodes)))))
-    ;; (swap! i inc)
     (mapv #(round (* multiplier %)) (range (count nodes)))))
 
 (declare getConnectedNodes)
@@ -153,7 +150,6 @@
             (stroke 255 0 255)
             (ellipse x y 2 2)
             (stroke (get node-color node-index) 360 360))))))
-  ;; (Thread/sleep 1000)
   )
 
 (defn addPath
@@ -253,12 +249,7 @@
   [nodes]
   (mapv 
    (fn [node] (and (:is-fixed (:data node))  (not (:is-end (:data node))) (not (:hardend? (:settings node))))
-     (update-in node [:settings] assoc
-                ;; :attraction-force (/ (:attraction-force (:settings node)) 2)
-                ;; :repulsion-force (* (:repulsion-force (:settings node)) 1.003)
-                ;; :max-velocity (* (:max-velocity (:settings node)) 0.995)
-                :hardend? true
-                )) 
+     (update-in node [:settings] assoc :hardend? true)) 
    nodes))
 
 (defn attract
@@ -367,10 +358,7 @@
                     (- 0 (:repulsion-force settings)))
             y (lerp (get (:pos @node) 1)
                     (get (:pos neighbor) 1)
-                    (- 0 (:repulsion-force settings)))
-            ;; x (/ (+ x (:x (:next-position (:data node)))) 2)
-            ;; y (/ (+ y (:y (:next-position (:data node)))) 2)
-            ]
+                    (- 0 (:repulsion-force settings)))]
         (swap! node update-in [:data :next-position] assoc :x x :y y)))
     @node))
 
@@ -460,12 +448,7 @@
                          (conj new-nodes node)
                          (if (and (= (mod hard-freq (:i @counter)) 0) (or (:is-fixed (:data prev-node)) (:is-fixed (:data next-node))))
                            (conj new-nodes (update-in node [:data] assoc :is-fixed true))
-                           (conj new-nodes node)
-                          ;;  (conj new-nodes
-                          ;;        (update-in node [:settings] assoc
-                          ;;                   :brownian-motion-range (* (:brownian-motion-range (:settings node)) depreciation-rate)
-                          ;;                   :max-velocity (* (:max-velocity (:settings node)) depreciation-rate)))
-                           ))))
+                           (conj new-nodes node)))))
                    []
                    (range (count nodes))))))))
 
@@ -668,9 +651,7 @@
                            tan (Math/atan a)
                            rad (Math/abs tan)
                            deg (degrees rad)
-                           angle (Math/round deg)
-                          ;;  sas (println (get (:pos next-node) 1) (get (:pos prev-node) 1) "n" n (get (:pos next-node) 0) (get (:pos prev-node) 0) "d" d "a" a "tan" tan deg angle)
-                           ]
+                           angle (Math/round deg)]
                        (if (and (>= angle 20) (< (rand-int 100) 50))
                          (conj new-nodes node)
                          (let [settings (if (:uniform-node-settings? (:settings path))
@@ -777,16 +758,10 @@
    []
    (range (count paths))))
 
-;; (defn testSplitPaths
-;;   []
-;;   (splitPaths [(createPathWithFixedNodes)]))
-
 (defn incrementLifespan
   "increments the lifespan of a given node"
   [node]
   (update-in node [:lifespan] inc))
-
-
 
 (defn grow
   "moves the node to new spot"
@@ -809,55 +784,34 @@
   (let [new-paths (atom paths)]
     (doseq [path-index (range (count @new-paths))]
       (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
-        ;; (drawPath (get @new-paths path-index))
-        ;; (println "start" @new-paths)
-        ;; (Thread/sleep 1000)
+
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
-        ;; (drawPath (get @new-paths path-index))
-        ;; (println "brown" @new-paths)
-        ;; (Thread/sleep 1000)
+
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAttraction (get @new-paths path-index) node-index))
-        ;; (drawPath (get @new-paths path-index))
-        ;; (Thread/sleep 1000)
+
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyRepulsion @new-paths path-index node-index))
-        ;; (drawPath (get @new-paths path-index))
-        ;; (Thread/sleep 1000)
+
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAlignment (get @new-paths path-index) node-index))
-        ;; (drawPath (get @new-paths path-index))
-        ;; (Thread/sleep 1000)
+
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
-        ;; (drawPath (get @new-paths path-index))
-        ;; (Thread/sleep 1000)
+
         (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
-      ;; (drawPath (get @new-paths path-index))
-      ;; (Thread/sleep 1000)
-      ;; (swap! new-paths assoc-in [path-index] (applyHardening (get @new-paths path-index)))
 
       (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
-      ;; (drawPath (get @new-paths path-index))
-      ;; (Thread/sleep 1000)
+
       (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
-      ;; (drawPath (get @new-paths path-index))
-      ;; (Thread/sleep 1000)
+
       (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
-      ;; (drawPath (get @new-paths path-index))
-      ;; (Thread/sleep 1000)
+
       (when (> (rand-int 100) 50)
         (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
-      ;; (drawPath (get @new-paths path-index))
-      ;; (Thread/sleep 1000)
+
       (swap! new-paths update-in [path-index :age] inc)
       (when (and not :div @div-complete (= (:age (get @new-paths path-index)) 500))
         (swap! new-paths assoc-in [path-index :nodes] (dividePathsOnHorizontalLine (get @new-paths path-index) (int (/ height 2))))
         (reset! new-paths (buildSubPaths @new-paths))
-        (swap! div-complete assoc-in [:div] true)
-        ;; (println @new-paths)
-        )
-      ;; (println (:age (get @new-paths path-index)))
-      ;;   (println " "))
-      )
-    ;; (println @new-paths)
-    ;; (Thread/sleep 5000)
+        (swap! div-complete assoc-in [:div] true)))
+
     @new-paths))
 
 (defn init-growth ;;call it seed?
