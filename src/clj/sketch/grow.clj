@@ -1,7 +1,8 @@
 (ns sketch.grow
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.calculations :as calc])
+            [sketch.calculations :as calc]
+            [clojure.core.async :refer [chan >!! <!! <! >! go thread put! take!]])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -781,36 +782,37 @@
 
 (defn applyGrowth
   [paths width height]
-  (let [new-paths (atom paths)]
-    (doseq [path-index (range (count @new-paths))]
-      (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
+  (let [new-paths (atom paths)
+        c (chan)]
+    (future (doseq [path-index (range (count @new-paths))]
+              (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
+                (swap! new-paths assoc-in [path-index :nodes node-index] (applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (applyAttraction (get @new-paths path-index) node-index))
+                (swap! new-paths assoc-in [path-index :nodes node-index] (applyAttraction (get @new-paths path-index) node-index))
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (applyRepulsion @new-paths path-index node-index))
+                (swap! new-paths assoc-in [path-index :nodes node-index] (applyRepulsion @new-paths path-index node-index))
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (applyAlignment (get @new-paths path-index) node-index))
+                (swap! new-paths assoc-in [path-index :nodes node-index] (applyAlignment (get @new-paths path-index) node-index))
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
+                (swap! new-paths assoc-in [path-index :nodes node-index] (applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
 
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
+                (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
 
-      (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
+              (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
 
-      (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
+              (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
 
-      (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
+              (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
 
-      (when (> (rand-int 100) 50)
-        (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
+              (when (> (rand-int 100) 50)
+                (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
 
-      (swap! new-paths update-in [path-index :age] inc)
-      (when (and not :div @div-complete (= (:age (get @new-paths path-index)) 500))
-        (swap! new-paths assoc-in [path-index :nodes] (dividePathsOnHorizontalLine (get @new-paths path-index) (int (/ height 2))))
-        (reset! new-paths (buildSubPaths @new-paths))
-        (swap! div-complete assoc-in [:div] true)))
+              (swap! new-paths update-in [path-index :age] inc)
+              (when (and not :div @div-complete (= (:age (get @new-paths path-index)) 500))
+                (swap! new-paths assoc-in [path-index :nodes] (dividePathsOnHorizontalLine (get @new-paths path-index) (int (/ height 2))))
+                (reset! new-paths (buildSubPaths @new-paths))
+                (swap! div-complete assoc-in [:div] true))))
 
     @new-paths))
 

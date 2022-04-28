@@ -13,7 +13,6 @@
   (:use [clojure.set :only [union]])
   (:use [clojure.contrib.map-utils :only [deep-merge-with]])
   (:import [org.apache.commons.math3.distribution ParetoDistribution])
-
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
@@ -42,12 +41,14 @@
       (swap! p assoc-in [:paths] (grow/init-growth window-width window-height))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
-        (grow/drawPath path)))
+        (grow/drawPath path)
+        ))
     (do
       (swap! p assoc-in [:paths] (grow/applyGrowth (:paths @p) window-width window-height))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
-        (grow/drawPath path))))
+        (grow/drawPath path)
+        )))
   ;; (Thread/sleep 5000)
   (swap! counter inc)
   ;; (when (mod @counter 10000)
