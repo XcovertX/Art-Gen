@@ -42,7 +42,7 @@
                        :fill-color nil
                        :stroke-color nil
                        :draw-edges true
-                       :draw-nodes true
+                       :draw-nodes false
                        :draw-fixed-nodes false
                        :draw-all-random-injections? false
                        :bug-finder-mode? true
