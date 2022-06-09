@@ -42,9 +42,15 @@ After watching this Numberphile video: https://www.youtube.com/watch?v=JbfhzlMk2
 
 ![projection line cap](https://user-images.githubusercontent.com/86869080/160075093-077de1e7-3a18-4630-8dab-061a21c0017a.jpg)
 
+## Cellular Growth
+
+The cellular growth tool will allow the program to utilize differential growth to fill voids with 'organic' 2-d structures. The stuctures are made up of a number of nodes that formulate paths. The algorithm iterates over all of the nodes and applies a number of forces that repulse/attract nodes to eachother and add/delete node when they are too far appart or near to eachother. This effect creates a very cool looking coral-like structure that can be grown in any void within the painting.
+
+https://user-images.githubusercontent.com/86869080/172756021-4603c129-1582-416b-a894-84d821a6258e.mp4
+
 ## Future
 
-Currently, I am working on an algorithm that will utilize differential growth to fill voids with 'organic' 2-d structures.
+Currently, I am working on implementing a multi-threading capability to reduce the runtime needed process the cellular, differential growth functions. 
 
 ## Usage
 
