@@ -102,8 +102,6 @@
   [pred coll]
   (first (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
 
-;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
-
 (defn colorSpectrum
   "changes the color of node output to RGB spectrum R: @ 0 V: @ length of vector"
   [nodes]
@@ -172,6 +170,11 @@
   "atomically adds a node to node-map"
   [node]
   (swap! node-map assoc-in [:nodes] (conj (@node-map :nodes) node)))
+
+;; (defn addNode
+;;   "atomically adds a node to node-map"
+;;   [node]
+;;   (swap! node-map assoc-in [:nodes] (conj (@node-map :nodes) node)))
 
 (defn buildNode
   "constructs a new node"
@@ -694,8 +697,6 @@
    is true for items in coll."
   [pred coll]
   (into [] (for [[idx elt] (indexFixed coll) :when (pred elt)] idx)))
-
-;; (positions #{2} [1 2 3 4 1 2 3 4]) => (1 5)
 
 (defn dividePathsOnHorizontalLine
   "divides path into new subpaths at every point that intersects with a given height"

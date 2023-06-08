@@ -17,8 +17,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1200)
-(def window-height 300)
+(def window-width 200)
+(def window-height 200)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
@@ -26,6 +26,7 @@
 (def counter (atom 0))
 
 (defn setup []
+  (print "here")
   ;; (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
   (stroke 360 0 360)
@@ -48,13 +49,11 @@
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path))))
-  ;; (Thread/sleep 5000)
   (swap! counter inc)
-  ;; (when (mod @counter 10000)
-  ;;   (print "count:" (count (:nodes (get (:paths @p) 0))) " "))
-  )
-  (grow/printPosition (:paths @p))
-  (grow/printNextPosition (:paths @p))
+)
+(grow/printPosition (:paths @p))
+(grow/printNextPosition (:paths @p))
+
 
 
 
