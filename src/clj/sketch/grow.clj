@@ -30,15 +30,15 @@
 (defrecord Data [is-fixed is-end to-remove is-random velocity next-position])
 
 (def default-settings (hash-map
-                       :min-distance 3
-                       :max-distance 6
-                       :repulsion-radius 7
+                       :min-distance 2.1
+                       :max-distance 4.5
+                       :repulsion-radius 6.5
                        :max-velocity 0.01
-                       :attraction-force 0.01
-                       :repulsion-force 20
-                       :allignment-force 0.001
-                       :node-injection-interval 10
-                       :brownian-motion-range 1.0
+                       :attraction-force 1
+                       :repulsion-force 40
+                       :allignment-force 0.3
+                       :node-injection-interval 1
+                       :brownian-motion-range 0.05
                        :fill-color nil
                        :stroke-color nil
                        :draw-edges true
@@ -58,7 +58,7 @@
                     :repulsion-force 20
                     :allignment-force 0.001
                     :node-injection-interval 10
-                    :brownian-motion-range 3.0
+                    :brownian-motion-range 0.25
                     :fill-color nil
                     :stroke-color nil
                     :draw-edges true
@@ -248,7 +248,7 @@
   (filterv #(or (not (:is-fixed (:data %))) (:is-end (:data %))) nodes))
 
 (defn amplifyFixed
-  "removes all fixed nodes"
+  "amplifies all fixed nodes"
   [nodes]
   (mapv 
    (fn [node] (and (:is-fixed (:data node))  (not (:is-end (:data node))) (not (:hardend? (:settings node))))
@@ -277,21 +277,24 @@
 
 (defn applyAttraction
   "moves all given nodes closer to their connected nodes"
+  "add if statement to avoid getting connected nodes"
   [path node-index]
+  (if (not (:is-fixed (:data (get (:nodes path) node-index))))
   (let [new-node (get (:nodes path) node-index)
+
         connected-nodes (getConnectedNodes (:nodes path) node-index (:is-closed path))
         next-node (:next connected-nodes)
         previous-node (:prev connected-nodes)
         new-node (if (and (not= next-node nil)
-                          (not (:is-fixed (:data new-node)))
-                          )
+                          (not (:is-fixed (:data new-node))))
                    (attract new-node next-node)
                    new-node)
         new-node (if (and (not= previous-node nil)
                           (not (:is-fixed (:data new-node))))
                    (attract new-node previous-node)
                    new-node)]
-    new-node))
+    new-node)
+    (get (:nodes path) node-index)))
 
 
 (declare applyRepulsion)
@@ -783,9 +786,9 @@
 (defn applyGrowth
   [paths width height]
   (let [new-paths (atom paths)]
-    (doseq [path-index (range (count @new-paths))]
+    (doseq [path-index (range (count @new-paths))] 
       (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
-
+        
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
 
         (swap! new-paths assoc-in [path-index :nodes node-index] (applyAttraction (get @new-paths path-index) node-index))
@@ -798,20 +801,22 @@
 
         (swap! new-paths assoc-in [path-index :nodes node-index] (grow (get (:nodes (get @new-paths path-index)) node-index))))
 
-      (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
+       (swap! new-paths assoc-in [path-index] (splitEdges (get @new-paths path-index)))
 
-      (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
+       (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
 
-      (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
+       (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
 
-      (when (> (rand-int 100) 50)
-        (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
+       (when (> (rand-int 100) 50)
+         (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
 
-      (swap! new-paths update-in [path-index :age] inc)
-      (when (and not :div @div-complete (= (:age (get @new-paths path-index)) 500))
-        (swap! new-paths assoc-in [path-index :nodes] (dividePathsOnHorizontalLine (get @new-paths path-index) (int (/ height 2))))
-        (reset! new-paths (buildSubPaths @new-paths))
-        (swap! div-complete assoc-in [:div] true)))
+       (swap! new-paths update-in [path-index :age] inc)
+      ;;  (when (and not :div @div-complete (= (:age (get @new-paths path-index)) 100))
+      ;;    (swap! new-paths assoc-in [path-index :nodes] (dividePathsOnHorizontalLine (get @new-paths path-index) (random width)))
+      ;;    (reset! new-paths (buildSubPaths @new-paths))
+      ;;    (swap! div-complete assoc-in [:div] true))
+       
+         )
 
     @new-paths))
 
@@ -821,5 +826,7 @@
   (let [p-1 [(createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
         p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
         p-3 [(createCirclePath 150 100 200 150 150 200 100 150)]
-        paths (applyGrowth p-2 w h)]
+        p-4 [(addLinePath [0 0] [w h])]
+        paths (applyGrowth p-4 w h)]
     paths))
+

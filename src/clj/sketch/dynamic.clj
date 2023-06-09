@@ -30,7 +30,7 @@
   ;; (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
   (stroke 360 0 360)
-  (stroke-weight 2)
+  (stroke-weight 4)
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
