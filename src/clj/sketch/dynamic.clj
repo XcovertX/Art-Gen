@@ -6,7 +6,9 @@
             [sketch.divider :as divi]
             [sketch.cell :as cell]
             [sketch.calculations :as cal]
-            [sketch.grow :as grow])
+            [sketch.grow :as grow]
+            [sketch.coral :as coral]
+            [sketch.tree :as tree])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -26,33 +28,35 @@
 (def counter (atom 0))
 
 (defn setup []
-  (print "here")
   ;; (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
   (stroke 360 0 360)
-  (stroke-weight 4)
+  (stroke-weight 2)
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
   )
 
 (defn draw []
-  (background 0 0 0)
+  ;; (background 0 0 0) 
   (if (= @counter 0)
     (do
-      (swap! p assoc-in [:paths] (grow/init-growth window-width window-height))
+      (background 0 0 0)
+      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
+
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
-    (do
-      (swap! p assoc-in [:paths] (grow/applyGrowth (:paths @p) window-width window-height))
-      (doseq [path (:paths @p)
-              :let [nodes (:nodes path)]]
-        (grow/drawPath path))))
+    ;; (do
+      ;; (swap! p assoc-in [:paths] (coral/applyCoralGrowth (:paths @p) window-width window-height))
+      ;; (doseq [path (:paths @p)
+      ;;         :let [nodes (:nodes path)]]
+      ;;   (grow/drawPath path))
+      ;; )
+    )
   (swap! counter inc)
 )
-(grow/printPosition (:paths @p))
-(grow/printNextPosition (:paths @p))
+
 
 
 

@@ -42,7 +42,7 @@
                        :fill-color nil
                        :stroke-color nil
                        :draw-edges true
-                       :draw-nodes false
+                       :draw-nodes true
                        :draw-fixed-nodes false
                        :draw-all-random-injections? false
                        :bug-finder-mode? true
@@ -277,7 +277,6 @@
 
 (defn applyAttraction
   "moves all given nodes closer to their connected nodes"
-  "add if statement to avoid getting connected nodes"
   [path node-index]
   (if (not (:is-fixed (:data (get (:nodes path) node-index))))
   (let [new-node (get (:nodes path) node-index)
