@@ -43,7 +43,6 @@
     (do
       (background 0 0 0)
       (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
-
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))

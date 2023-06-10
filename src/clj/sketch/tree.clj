@@ -74,34 +74,28 @@
 (defn injectSeeds
   "adds a given count of seeds randomly dispersed"
   [path seed-count]
-  
-    (let [new-path (atom path)
-          nodes (:nodes path)
-          node-first (get nodes 0) 
-          length (- (count nodes) 1)
-          node-last (get nodes length)
-          distance (grow/getDistance node-first node-last)
-          seeds (vec (distinct (sort (vec (take seed-count (repeatedly #(rand-int distance)))))))
-          settings (if (:uniform-node-settings? (:settings path))
-                     (:settings path)
-                     (:settings node-first))]
-      (println " X " seeds)
-      (doseq [node-index (range (+ (count seeds) 2))]
-        (when (and (not= node-index 0)
-                  (not= node-index (+ (count seeds) 1)))
-          (let [connected-nodes (grow/getConnectedNodes (:nodes @new-path) node-index (:is-closed @new-path))
-                next-node (:next connected-nodes)
-                previous-node (:prev connected-nodes)
-                new-y (get (:pos previous-node) 1)
-                new-x (get seeds (- node-index 1))
-                new-node (grow/buildNode new-x new-y settings false false false false)]
-            (println "X" node-index)
-            (println (:pos (:prev connected-nodes)))
-            (println (:pos (:next connected-nodes)))
-            (println (:pos new-node))
-            (println (get seeds node-index))
-            (swap! new-path assoc-in [:nodes] (grow/insert (:nodes @new-path) (- node-index 1) new-node)))))
-      @new-path))
+
+  (let [new-path (atom path)
+        nodes (:nodes path)
+        node-first (get nodes 0)
+        length (- (count nodes) 1)
+        node-last (get nodes length)
+        distance (grow/getDistance node-first node-last)
+        seeds (vec (distinct (sort (vec (take seed-count (repeatedly #(rand-int distance)))))))
+        settings (if (:uniform-node-settings? (:settings path))
+                   (:settings path)
+                   (:settings node-first))]
+    (doseq [node-index (range (+ (count seeds) 2))]
+      (when (and (not= node-index 0)
+                 (not= node-index (+ (count seeds) 1)))
+        (let [connected-nodes (grow/getConnectedNodes (:nodes @new-path) node-index (:is-closed @new-path))
+              next-node (:next connected-nodes)
+              previous-node (:prev connected-nodes)
+              new-y (get (:pos previous-node) 1)
+              new-x (get seeds (- node-index 1))
+              new-node (grow/buildNode new-x new-y settings false false false false)]
+          (swap! new-path assoc-in [:nodes] (grow/insert (:nodes @new-path) node-index new-node)))))
+    @new-path))
       
 
 
@@ -144,8 +138,5 @@
         p-2 [(grow/addLinePath [0 (/ h 2)] [w (/ h 2)])]
         p-3 [(grow/createCirclePath 150 100 200 150 150 200 100 150)]
         p-4 [(grow/addLinePath [0 0] [w h])]
-        path (injectSeeds (get p-2 0) seed-count)] 
-    (println "")
-    (println "old path: " (count (:nodes (get p-2 0))))
-    (println "new path: " (count (:nodes path)))
-    path))
+        path (injectSeeds (get p-2 0) seed-count)]
+    [path]))
