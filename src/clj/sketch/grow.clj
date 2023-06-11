@@ -139,7 +139,9 @@
           (when (:is-fixed (:data node))
             (stroke 255 0 255)
             (ellipse x y 2 2)
-            (stroke (get node-color node-index) 360 360)))
+            (stroke (get node-color node-index) 360 360)
+            
+            ))
         (when (:draw-all-random-injections? (:settings path))
           (when (:is-random (:data node))
             (ellipse x y 2 2)))
@@ -279,20 +281,20 @@
   "moves all given nodes closer to their connected nodes"
   [path node-index]
   (if (not (:is-fixed (:data (get (:nodes path) node-index))))
-  (let [new-node (get (:nodes path) node-index)
+    (let [new-node (get (:nodes path) node-index)
 
-        connected-nodes (getConnectedNodes (:nodes path) node-index (:is-closed path))
-        next-node (:next connected-nodes)
-        previous-node (:prev connected-nodes)
-        new-node (if (and (not= next-node nil)
-                          (not (:is-fixed (:data new-node))))
-                   (attract new-node next-node)
-                   new-node)
-        new-node (if (and (not= previous-node nil)
-                          (not (:is-fixed (:data new-node))))
-                   (attract new-node previous-node)
-                   new-node)]
-    new-node)
+          connected-nodes (getConnectedNodes (:nodes path) node-index (:is-closed path))
+          next-node (:next connected-nodes)
+          previous-node (:prev connected-nodes)
+          new-node (if (and (not= next-node nil)
+                            (not (:is-fixed (:data new-node))))
+                     (attract new-node next-node)
+                     new-node)
+          new-node (if (and (not= previous-node nil)
+                            (not (:is-fixed (:data new-node))))
+                     (attract new-node previous-node)
+                     new-node)]
+      new-node)
     (get (:nodes path) node-index)))
 
 

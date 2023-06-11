@@ -11,7 +11,7 @@
   (:import [org.apache.commons.math3.distribution ParetoDistribution])
   (:import [processing.core PShape PGraphics]))
 
-(def path-map (atom {:paths []}))
+;; ------ Definitions ----------------
 (defrecord Path [nodes
                  settings
                  is-closed
@@ -24,11 +24,10 @@
                  is-mature
                  is-divide-ready])
 
-(def node-map (atom {:nodes []}))
 (defrecord Node [pos settings data lifespan])
-(defrecord Data [is-fixed is-end to-remove is-random velocity next-position])
+(defrecord Data [is-fixed is-end is-top is-branch-ready to-remove is-random velocity next-position])
 
-(def default-settings (hash-map
+(def default-tree-node-settings (hash-map
                        :min-distance 2.1
                        :max-distance 4.5
                        :repulsion-radius 6.5
@@ -48,7 +47,7 @@
                        :uniform-node-settings? false
                        :hardend? false))
 
-(def path-settings (hash-map
+(def default-tree-path-settings (hash-map
                     :min-distance 3
                     :max-distance 6
                     :repulsion-radius 7
@@ -61,7 +60,7 @@
                     :fill-color nil
                     :stroke-color nil
                     :draw-edges true
-                    :draw-nodes false
+                    :draw-nodes true
                     :draw-fixed-nodes true
                     :draw-all-random-injections? false
                     :draw-new-random-injections? false
@@ -69,12 +68,34 @@
                     :uniform-node-settings? false
                     :hardend? false))
 
-;; ------------ Primary Growth Functions -----------------
+;; ------------ Init Tree Functions -----------------
+(defn buildNode
+  "constructs a new node"
+  [x y settings is-fixed is-end is-top is-branch-ready to-remove is-random]
+  (Node. [x y]
+         settings
+         (Data. is-fixed is-end is-top is-branch-ready to-remove is-random 0 {:x x :y y})
+         0))
+
+(defn buildPath
+  "builds a path"
+  [nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed]
+  (Path. nodes settings is-closed bounds brownian alignment node-injection-interval is-fixed 0 false false))
+
+(defn createLine
+  "creates a node list containg 2 nodes"
+  [pos1 pos2]
+  (vector
+   (buildNode (get pos1 0) (get pos1 1) default-tree-node-settings true true false false false false)
+   (buildNode (get pos2 0) (get pos2 1) default-tree-node-settings true true false false false false)))
+
+(defn addLinePath
+  [pos1 pos2]
+  (buildPath (createLine pos1 pos2) default-tree-path-settings false [] true 0.45 10 false))
 
 (defn injectSeeds
   "adds a given count of seeds randomly dispersed"
   [path seed-count]
-
   (let [new-path (atom path)
         nodes (:nodes path)
         node-first (get nodes 0)
@@ -93,50 +114,67 @@
               previous-node (:prev connected-nodes)
               new-y (get (:pos previous-node) 1)
               new-x (get seeds (- node-index 1))
-              new-node (grow/buildNode new-x new-y settings false false false false)]
+              new-node (buildNode new-x new-y settings false false true true false false)] 
           (swap! new-path assoc-in [:nodes] (grow/insert (:nodes @new-path) node-index new-node)))))
     @new-path))
-      
-
-
-
-(defn applyTreeGrowth
-  [paths width height]
-  (let [new-paths (atom paths)]
-    (doseq [path-index (range (count @new-paths))]
-      (doseq [node-index (range (count (:nodes (get @new-paths path-index))))]
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow/applyBrownianMotion (get (:nodes (get @new-paths path-index)) node-index)))
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow/applyAttraction (get @new-paths path-index) node-index))
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow/applyRepulsion @new-paths path-index node-index))
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow/applyAlignment (get @new-paths path-index) node-index))
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow/applyBounds-2 (get (:nodes (get @new-paths path-index)) node-index) width height))
-
-        (swap! new-paths assoc-in [path-index :nodes node-index] (grow/grow (get (:nodes (get @new-paths path-index)) node-index))))
-
-      (swap! new-paths assoc-in [path-index] (grow/splitEdges (get @new-paths path-index)))
-
-      (swap! new-paths assoc-in [path-index] (grow/pruneNodes (get @new-paths path-index)))
-
-      (swap! new-paths assoc-in [path-index :nodes] (grow/removeFixed (:nodes (get @new-paths path-index))))
-
-      (when (> (rand-int 100) 50)
-        (swap! new-paths assoc-in [path-index] (grow/injectRandomNodeByCurvature (get @new-paths path-index))))
-
-      (swap! new-paths update-in [path-index :age] inc))
-
-    @new-paths))
 
 (defn seed-tree
   "initializes tree growth"
   [w h seed-count]
   (let [p-1 [(grow/createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
-        p-2 [(grow/addLinePath [0 (/ h 2)] [w (/ h 2)])]
+        p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
         p-3 [(grow/createCirclePath 150 100 200 150 150 200 100 150)]
         p-4 [(grow/addLinePath [0 0] [w h])]
         path (injectSeeds (get p-2 0) seed-count)]
     [path]))
+
+;; --------- Branching functions --------
+(defn insertNodeLeft
+  "inserts a node to the left of a node"
+  [path node node-index]
+  (if (and (> node-index 0)
+           (< node-index (- (count (:nodes path)) 1))
+           (not (:is-end node)))
+    (assoc-in path [:nodes] (grow/insert (:nodes path) (- node-index 1) node))
+    path))
+
+(defn insertNodeRight
+  "inserts a node to the right of a node"
+  [path node node-index]
+  (if (and (> node-index 0)
+           (< node-index (- (count (:nodes path)) 1))
+           (not (:is-end node))) 
+    (assoc-in path [:nodes] (grow/insert (:nodes path) node-index node))
+    path))
+
+(defn branch
+  "causes tree structure to branch"
+  [path]
+  (let [new-path (atom path)]
+    (swap! new-path assoc-in [:nodes] [])
+    (doseq [node-index (range (count (:nodes path)))]
+      (if (and (:is-top (:data (get (:nodes path) node-index))) 
+               (:is-branch-ready (:data (get (:nodes path) node-index))))
+        (let [node (get (:nodes path) node-index)
+              new-left-x (- (get (:pos (get (:nodes path) node-index)) 0) 100)
+              new-left-y (- (get (:pos (get (:nodes path) node-index)) 1) 100)
+              new-right-x (+ (get (:pos (get (:nodes path) node-index)) 0) 100)
+              new-right-y (- (get (:pos (get (:nodes path) node-index)) 1) 100)
+              left-node (buildNode new-left-x new-left-y default-tree-node-settings false false false false false false)
+              right-node (buildNode new-right-x new-right-y default-tree-node-settings false false false false false false)
+              updated-node (update-in node [:data] assoc :is-branch-ready false)]
+          (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) left-node))
+          (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node))
+          (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) right-node)))
+        (do
+          (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index))))
+        ))
+    @new-path))
+
+;; --------- Primary Growth Iterator Functions ---------------
+(defn applyTreeGrowth
+  [paths width height]
+  (let [new-paths (atom paths)]
+    (doseq [path-index (range (count @new-paths))]
+      (swap! new-paths assoc-in [path-index] (branch (get @new-paths path-index))))
+    @new-paths))

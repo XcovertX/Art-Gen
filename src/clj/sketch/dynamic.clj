@@ -19,8 +19,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 200)
-(def window-height 200)
+(def window-width 1000)
+(def window-height 1000)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
@@ -38,22 +38,21 @@
   )
 
 (defn draw []
-  ;; (background 0 0 0) 
+  (background 0 0 0) 
   (if (= @counter 0)
     (do
-      (background 0 0 0)
       (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
-    ;; (do
-      ;; (swap! p assoc-in [:paths] (coral/applyCoralGrowth (:paths @p) window-width window-height))
-      ;; (doseq [path (:paths @p)
-      ;;         :let [nodes (:nodes path)]]
-      ;;   (grow/drawPath path))
-      ;; )
-    )
+
+    (do
+      (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
+      (doseq [path (:paths @p)
+              :let [nodes (:nodes path)]]
+        (grow/drawPath path))))
   (swap! counter inc)
+  (Thread/sleep 1000)
 )
 
 
