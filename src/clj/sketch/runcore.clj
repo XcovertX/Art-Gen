@@ -10,3 +10,4 @@
    :draw dynamic/draw
    :size [10800 10800]
    :features [:exit-on-close]))
+

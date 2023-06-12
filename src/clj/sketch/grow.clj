@@ -42,7 +42,7 @@
                        :fill-color nil
                        :stroke-color nil
                        :draw-edges true
-                       :draw-nodes false
+                       :draw-nodes true
                        :draw-fixed-nodes false
                        :draw-all-random-injections? false
                        :bug-finder-mode? true
@@ -129,8 +129,8 @@
                   prev-y (get (:pos prev) 1)]]
       (when (not (:is-fixed path))
         (when (:draw-edges (:settings path))
-         (when (not= next nil)
-          (line x y next-x next-y)))
+          (when (not= next nil)
+            (line x y next-x next-y)))
         (when (:bug-finder-mode? (:settings path))
           (stroke (get node-color node-index) 360 360))
         (when (:draw-nodes (:settings path))
@@ -147,7 +147,8 @@
           (when (and (:is-random (:data node)) (= (:lifespan node) 0))
             (stroke 255 0 255)
             (ellipse x y 2 2)
-            (stroke (get node-color node-index) 360 360))))))
+            (stroke (get node-color node-index) 360 360))))
+      ))
   )
 
 (defn addPath
@@ -277,23 +278,22 @@
 
 (defn applyAttraction
   "moves all given nodes closer to their connected nodes"
-  "add if statement to avoid getting connected nodes"
   [path node-index]
   (if (not (:is-fixed (:data (get (:nodes path) node-index))))
-  (let [new-node (get (:nodes path) node-index)
+    (let [new-node (get (:nodes path) node-index)
 
-        connected-nodes (getConnectedNodes (:nodes path) node-index (:is-closed path))
-        next-node (:next connected-nodes)
-        previous-node (:prev connected-nodes)
-        new-node (if (and (not= next-node nil)
-                          (not (:is-fixed (:data new-node))))
-                   (attract new-node next-node)
-                   new-node)
-        new-node (if (and (not= previous-node nil)
-                          (not (:is-fixed (:data new-node))))
-                   (attract new-node previous-node)
-                   new-node)]
-    new-node)
+          connected-nodes (getConnectedNodes (:nodes path) node-index (:is-closed path))
+          next-node (:next connected-nodes)
+          previous-node (:prev connected-nodes)
+          new-node (if (and (not= next-node nil)
+                            (not (:is-fixed (:data new-node))))
+                     (attract new-node next-node)
+                     new-node)
+          new-node (if (and (not= previous-node nil)
+                            (not (:is-fixed (:data new-node))))
+                     (attract new-node previous-node)
+                     new-node)]
+      new-node)
     (get (:nodes path) node-index)))
 
 

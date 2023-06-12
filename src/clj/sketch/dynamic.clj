@@ -6,7 +6,9 @@
             [sketch.divider :as divi]
             [sketch.cell :as cell]
             [sketch.calculations :as cal]
-            [sketch.grow :as grow])
+            [sketch.grow :as grow]
+            [sketch.coral :as coral]
+            [sketch.tree :as tree])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -17,42 +19,48 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 200)
-(def window-height 200)
+(def window-width 1000)
+(def window-height 1000)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
 (def p (atom {:paths {}}))
 (def counter (atom 0))
+(def node-count (atom 0))
 
 (defn setup []
-  (print "here")
   ;; (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
   (stroke 360 0 360)
-  (stroke-weight 4)
+  (stroke-weight 2)
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
+  (reset! node-count 0)
   )
 
 (defn draw []
   (background 0 0 0)
   (if (= @counter 0)
     (do
-      (swap! p assoc-in [:paths] (grow/init-growth window-width window-height))
+      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 1))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
+
     (do
-      (swap! p assoc-in [:paths] (grow/applyGrowth (:paths @p) window-width window-height))
+      (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
+        (when (< @node-count (count nodes))
+          (doseq [node nodes]
+            (println "pos: " (:pos node) " count: " (count nodes) " count: " @node-count " is-bottom: " (:is-bottom (:data node)))))
+        (reset! node-count (count nodes))
         (grow/drawPath path))))
   (swap! counter inc)
-)
-(grow/printPosition (:paths @p))
-(grow/printNextPosition (:paths @p))
+  (Thread/sleep 200)
+  )
+
 
 
 
