@@ -52,13 +52,13 @@
       (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
-        ;; (if (< @node-count (count nodes))
-        ;;   (doseq [node nodes]
-        ;;     (println "pos: " (:pos node) " count: " (count nodes) " count: " @node-count " age: " (:age (:data node)))))
-        ;; (reset! node-count (count nodes))
+        (when (< @node-count (count nodes))
+          (doseq [node nodes]
+            (println "pos: " (:pos node) " count: " (count nodes) " count: " @node-count " is-bottom: " (:is-bottom (:data node)))))
+        (reset! node-count (count nodes))
         (grow/drawPath path))))
   (swap! counter inc)
-  (Thread/sleep 100)
+  (Thread/sleep 200)
   )
 
 

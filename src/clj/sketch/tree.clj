@@ -169,7 +169,7 @@
               (= (:side (:data (get (:nodes path) node-index))) "right"))
         (if (:is-branch-ready (:data (get (:nodes path) node-index)))
           (let [node (get (:nodes path) node-index)
-                connected-nodes (grow/getConnectedNodes (:nodes @new-path) node-index (:is-closed path))
+                connected-nodes (grow/getConnectedNodes (:nodes path) node-index (:is-closed path))
                 new-left-x (- (get (:pos (get (:nodes path) node-index)) 0) 2)
                 new-left-y (+ (get (:pos (get (:nodes path) node-index)) 1) 0)
                 new-right-x (+ (get (:pos (get (:nodes path) node-index)) 0) 2)
@@ -279,6 +279,6 @@
   (let [new-paths (atom paths)]
     (doseq [path-index (range (count @new-paths))]
       (swap! new-paths assoc-in [path-index] (branch (get @new-paths path-index)))
-      (swap! new-paths assoc-in [path-index] (grow (get @new-paths path-index) 3 2))
+      (swap! new-paths assoc-in [path-index] (grow (get @new-paths path-index) 2 2))
       )
     @new-paths))
