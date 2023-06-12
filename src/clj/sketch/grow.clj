@@ -129,8 +129,8 @@
                   prev-y (get (:pos prev) 1)]]
       (when (not (:is-fixed path))
         (when (:draw-edges (:settings path))
-         (when (not= next nil)
-          (line x y next-x next-y)))
+          (when (not= next nil)
+            (line x y next-x next-y)))
         (when (:bug-finder-mode? (:settings path))
           (stroke (get node-color node-index) 360 360))
         (when (:draw-nodes (:settings path))
@@ -139,9 +139,7 @@
           (when (:is-fixed (:data node))
             (stroke 255 0 255)
             (ellipse x y 2 2)
-            (stroke (get node-color node-index) 360 360)
-            
-            ))
+            (stroke (get node-color node-index) 360 360)))
         (when (:draw-all-random-injections? (:settings path))
           (when (:is-random (:data node))
             (ellipse x y 2 2)))
@@ -149,7 +147,8 @@
           (when (and (:is-random (:data node)) (= (:lifespan node) 0))
             (stroke 255 0 255)
             (ellipse x y 2 2)
-            (stroke (get node-color node-index) 360 360))))))
+            (stroke (get node-color node-index) 360 360))))
+      ))
   )
 
 (defn addPath

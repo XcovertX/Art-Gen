@@ -26,6 +26,7 @@
 (def img (ref nil))
 (def p (atom {:paths {}}))
 (def counter (atom 0))
+(def node-count (atom 0))
 
 (defn setup []
   ;; (dosync (ref-set img (load-image img-url)))
@@ -35,13 +36,14 @@
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
+  (reset! node-count 0)
   )
 
 (defn draw []
-  (background 0 0 0) 
+  (background 0 0 0)
   (if (= @counter 0)
     (do
-      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
+      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 1))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
@@ -50,10 +52,14 @@
       (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
+        ;; (if (< @node-count (count nodes))
+        ;;   (doseq [node nodes]
+        ;;     (println "pos: " (:pos node) " count: " (count nodes) " count: " @node-count " age: " (:age (:data node)))))
+        ;; (reset! node-count (count nodes))
         (grow/drawPath path))))
   (swap! counter inc)
-  (Thread/sleep 1000)
-)
+  (Thread/sleep 100)
+  )
 
 
 
