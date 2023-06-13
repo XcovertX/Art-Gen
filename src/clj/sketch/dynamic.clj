@@ -36,6 +36,7 @@
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
+  (reset! tree/counter 0)
   (reset! node-count 0)
   )
 
@@ -43,7 +44,7 @@
   (background 0 0 0)
   (if (= @counter 0)
     (do
-      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 1))
+      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 10))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
@@ -52,13 +53,14 @@
       (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
-        (when (< @node-count (count nodes))
-          (doseq [node nodes]
-            (println "pos: " (:pos node) " count: " (count nodes) " count: " @node-count " is-bottom: " (:is-bottom (:data node)))))
-        (reset! node-count (count nodes))
+        ;; (when (< @node-count (count nodes))
+        ;;   (println "---------------")
+        ;;   (doseq [node nodes] 
+        ;;     (println "count: " @node-count "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age (:data node)) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
+        ;; (reset! node-count (count nodes))
         (grow/drawPath path))))
   (swap! counter inc)
-  (Thread/sleep 200)
+  ;; (Thread/sleep 100)
   )
 
 
