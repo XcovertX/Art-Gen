@@ -56,7 +56,7 @@
         ;; (when (< @node-count (count nodes))
         ;;   (println "---------------")
         ;;   (doseq [node nodes] 
-        ;;     (println "count: " @node-count "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age (:data node)) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
+        ;;     (println "is-fixed: " (:is-fixed (:data node)) "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
         ;; (reset! node-count (count nodes))
         (grow/drawPath path))))
   (swap! counter inc)

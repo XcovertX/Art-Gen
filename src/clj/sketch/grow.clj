@@ -134,7 +134,9 @@
         (when (:bug-finder-mode? (:settings path))
           (stroke (get node-color node-index) 360 360))
         (when (:draw-nodes (:settings path))
-          (ellipse x y 2 2))
+          (when (or (not= x nil)
+                    (not= y nil))
+            (ellipse x y 2 2)))
         (when (:draw-fixed-nodes (:settings path))
           (when (:is-fixed (:data node))
             (stroke 255 0 255)
@@ -147,9 +149,7 @@
           (when (and (:is-random (:data node)) (= (:lifespan node) 0))
             (stroke 255 0 255)
             (ellipse x y 2 2)
-            (stroke (get node-color node-index) 360 360))))
-      ))
-  )
+            (stroke (get node-color node-index) 360 360)))))))
 
 (defn addPath
   "adds a given path to path-map"
@@ -221,8 +221,13 @@
   [vec pos item]
   (apply conj (subvec vec 0 pos) item (subvec vec pos)))
 
+(defn removeSection
+  "removes a given section of the path"
+  [vec startIndex endIndex]
+  (apply conj (subvec vec 0 startIndex) (subvec vec endIndex)))
+
 (defn eject
-  "remove nodes into a specific index"
+  "remove nodes from a specific index"
   [vec pos]
   (apply conj
          (if (= pos 1)
@@ -247,6 +252,15 @@
   "removes all fixed nodes"
   [nodes]
   (filterv #(or (not (:is-fixed (:data %))) (:is-end (:data %))) nodes))
+
+(defn setAllNodesToFixed
+  "sets all nodes in a given path to is-fixed: true"
+  [path]
+  (assoc-in path [:nodes]
+            (mapv (fn [node]
+                   (update-in node [:data] assoc :is-fixed true))
+                 (:nodes path)))) 
+
 
 (defn amplifyFixed
   "amplifies all fixed nodes"

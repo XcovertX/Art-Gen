@@ -73,8 +73,8 @@
                     :fill-color nil
                     :stroke-color nil
                     :draw-edges true
-                    :draw-nodes true
-                    :draw-fixed-nodes true
+                    :draw-nodes false
+                    :draw-fixed-nodes false
                     :draw-all-random-injections? false
                     :draw-new-random-injections? false
                     :bug-finder-mode? true
@@ -133,7 +133,7 @@
               previous-node (:prev connected-nodes)
               new-y (get (:pos previous-node) 1)
               new-x (get seeds (- node-index 1))
-              new-node (buildNode new-x new-y settings false false true true false false "top" false 0 (rand-int 200))
+              new-node (buildNode new-x new-y settings false false true true false false "top" false 0 (rand-int 350))
               updated-new-node (update-in new-node [:settings] assoc :branch-angle 0)
               updated-new-node (update updated-new-node :parent-node-id inc)] 
           (swap! new-path assoc-in [:nodes] (grow/insert (:nodes @new-path) node-index updated-new-node)))))
@@ -145,7 +145,7 @@
   (let [p-1 [(grow/createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
         p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
         p-3 [(grow/createCirclePath 150 100 200 150 150 200 100 150)]
-        p-4 [(grow/addLinePath [0 0] [w h])]
+        p-4 [(addLinePath [0 0] [w h])]
         p-5 [(addLinePath [0 (- h 10)] [w (- h 10)])]
         path (injectSeeds (get p-5 0) seed-count)]
     [path]))
@@ -176,49 +176,49 @@
     (swap! new-path assoc-in [:nodes] [])
     (doseq [node-index (range (count (:nodes path)))]
       (if (not (:is-fixed (:data (get (:nodes path) node-index))))
-       (if (or (= (:side (:data (get (:nodes path) node-index))) "top")
-               (= (:side (:data (get (:nodes path) node-index))) "left")
-               (= (:side (:data (get (:nodes path) node-index))) "right"))
-         (if (and (:is-branch-ready (:data (get (:nodes path) node-index)))
-                  (> (:age (:data (get (:nodes path) node-index)))
-                     (:delay-growth-by (:data (get (:nodes path) node-index)))))
-           (let [node (get (:nodes path) node-index)
-                 connected-nodes (grow/getConnectedNodes (:nodes path) node-index (:is-closed path))
-                 new-left-x (- (get (:pos (get (:nodes path) node-index)) 0) 2)
-                 new-left-y (+ (get (:pos (get (:nodes path) node-index)) 1) 0)
-                 new-right-x (+ (get (:pos (get (:nodes path) node-index)) 0) 2)
-                 new-right-y (+ (get (:pos (get (:nodes path) node-index)) 1) 0)
-                 left-node (if (and (:is-bottom (:data (:prev connected-nodes)))
-                                    (:is-fixed (:data (:prev connected-nodes))))
-                             (buildNode new-left-x new-left-y default-tree-node-settings
-                                        false false false false false false "left" true (+ (:distance-from-top (:data node)) 1) 0)
-                             (buildNode new-left-x new-left-y default-tree-node-settings
-                                        false false false false false false "left" false (+ (:distance-from-top (:data node)) 1) 0))
-                 left-node (update-in left-node [:settings] assoc :branch-angle 15
-                                      :branch-height-minimum (* (:age @new-path) (:branch-height-minimum (:settings left-node))))
-                 left-node (assoc left-node :parent-node-id (:id node))
-                 right-node (if (and (:is-bottom (:data (:next connected-nodes)))
-                                     (:is-fixed (:data (:next connected-nodes))))
-                              (buildNode new-right-x new-right-y default-tree-node-settings
-                                         false false false false false false "right" true (+ (:distance-from-top (:data node)) 1) 0)
-                              (buildNode new-right-x new-right-y default-tree-node-settings
-                                         false false false false false false "right" false (+ (:distance-from-top (:data node)) 1) 0))
-                 right-node (update-in right-node [:settings] assoc :branch-angle -15
-                                       :branch-height-minimum (* (:age @new-path) (:branch-height-minimum (:settings right-node))))
-                 right-node (assoc right-node :parent-node-id (:id node))
-                 updated-node (update-in node [:data] assoc
-                                         :is-branch-ready false
-                                         :branch-count (inc (:branch-count (:data node))))
-                 updated-node (if (< (:distance-from-top (:data updated-node)) 2)
-                                (update-in updated-node [:data] assoc :is-tip true)
-                                updated-node)]
-             (when (or (= (:side (:data node)) "left") (= (:side (:data node)) "top"))
-               (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) left-node)))
-             (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node))
-             (when (or (= (:side (:data node)) "right") (= (:side (:data node)) "top"))
-               (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) right-node))))
-           (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index))))
-         (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index))))
+        (if (or (= (:side (:data (get (:nodes path) node-index))) "top")
+                (= (:side (:data (get (:nodes path) node-index))) "left")
+                (= (:side (:data (get (:nodes path) node-index))) "right"))
+          (if (and (:is-branch-ready (:data (get (:nodes path) node-index)))
+                   (> (:age (:data (get (:nodes path) node-index)))
+                      (:delay-growth-by (:data (get (:nodes path) node-index)))))
+            (let [node (get (:nodes path) node-index)
+                  connected-nodes (grow/getConnectedNodes (:nodes path) node-index (:is-closed path))
+                  new-left-x (- (get (:pos (get (:nodes path) node-index)) 0) 2)
+                  new-left-y (+ (get (:pos (get (:nodes path) node-index)) 1) 0)
+                  new-right-x (+ (get (:pos (get (:nodes path) node-index)) 0) 2)
+                  new-right-y (+ (get (:pos (get (:nodes path) node-index)) 1) 0)
+                  left-node (if (and (:is-bottom (:data (:prev connected-nodes)))
+                                     (:is-fixed (:data (:prev connected-nodes))))
+                              (buildNode new-left-x new-left-y default-tree-node-settings
+                                         false false false false false false "left" true (+ (:distance-from-top (:data node)) 1) 0)
+                              (buildNode new-left-x new-left-y default-tree-node-settings
+                                         false false false false false false "left" false (+ (:distance-from-top (:data node)) 1) 0))
+                  left-node (update-in left-node [:settings] assoc :branch-angle 15
+                                       :branch-height-minimum (* 2 (:branch-height-minimum (:settings left-node))))
+                  left-node (assoc left-node :parent-node-id (:id node))
+                  right-node (if (and (:is-bottom (:data (:next connected-nodes)))
+                                      (:is-fixed (:data (:next connected-nodes))))
+                               (buildNode new-right-x new-right-y default-tree-node-settings
+                                          false false false false false false "right" true (+ (:distance-from-top (:data node)) 1) 0)
+                               (buildNode new-right-x new-right-y default-tree-node-settings
+                                          false false false false false false "right" false (+ (:distance-from-top (:data node)) 1) 0))
+                  right-node (update-in right-node [:settings] assoc :branch-angle -15
+                                        :branch-height-minimum (* 2 (:branch-height-minimum (:settings right-node))))
+                  right-node (assoc right-node :parent-node-id (:id node))
+                  updated-node (update-in node [:data] assoc
+                                          :is-branch-ready false
+                                          :branch-count (inc (:branch-count (:data node))))
+                  updated-node (if (< (:distance-from-top (:data updated-node)) 2)
+                                 (update-in updated-node [:data] assoc :is-tip true)
+                                 updated-node)]
+              (when (or (= (:side (:data node)) "left") (= (:side (:data node)) "top"))
+                (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) left-node)))
+              (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node))
+              (when (or (= (:side (:data node)) "right") (= (:side (:data node)) "top"))
+                (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) right-node))))
+            (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index))))
+          (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index))))
         (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index)))))
     @new-path))
 
@@ -233,8 +233,8 @@
         (do
           (when (= (:side (:data (get (:nodes path) node-index))) "top")                            ;; when node is top of tree 
             (if (and (not (:is-branch-ready (:data (get (:nodes path) node-index))))
-                    (> (:age (:data (get (:nodes path) node-index)))
-                       (:delay-growth-by (:data (get (:nodes path) node-index)))))                     ;; when node is not ready to branch
+                     (> (:age (:data (get (:nodes path) node-index)))
+                        (:delay-growth-by (:data (get (:nodes path) node-index)))))                     ;; when node is not ready to branch
               (let [node (get (:nodes path) node-index)
                     updated-node (update-in node [:pos] assoc 1 (- (get (:pos node) 1) top-rate))   ;; inc node vertical pos by the given rate
                     updated-node (update-in updated-node [:data] assoc :growth-iteration-count
@@ -344,6 +344,26 @@
         (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) (get (:nodes path) node-index)))))
     @new-path))
 
+(defn getTopNodes
+  "returns a vec with indexes of al nodes marked 'top'"
+  [nodes]
+  (filterv #(= (:side (:data %)) "top") nodes))
+
+(defn removeOverLappingTreeNodes
+  "removes the sections of the path that overlap"
+  [path low-x high-x]
+  (let [nodes (:nodes path)
+        new-nodes (atom [])
+        top-node-positions (getTopNodes (:nodes path))]
+    (doseq [index (range (count top-node-positions))]
+      (when (= index 0)
+        (swap! new-nodes assoc [] (filterv
+                                   #(>= (get (:pos %) 0) low-x)
+                                   (subvec nodes 0 (get top-node-positions index)))))
+      
+      )
+    (mapv (fn [x] (* x x)) (range 1 10))))
+
 ;; --------- Primary Growth Iterator Functions ---------------
 
 (defn applyTreeGrowth
@@ -352,5 +372,7 @@
     (doseq [path-index (range (count @new-paths))]
       (swap! new-paths assoc-in [path-index] (branch (get @new-paths path-index)))
       (swap! new-paths assoc-in [path-index] (grow (get @new-paths path-index) 4 3))
-      )
+      (when (> (:age (get @new-paths path-index)) 300)
+        (swap! new-paths assoc-in [path-index] (grow/setAllNodesToFixed (get @new-paths path-index))))
+      (swap! new-paths assoc-in [path-index] (grow/incPathAge (get @new-paths path-index))))
     @new-paths))
