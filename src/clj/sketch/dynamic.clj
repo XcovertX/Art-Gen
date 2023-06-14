@@ -44,7 +44,7 @@
   (background 0 0 0)
   (if (= @counter 0)
     (do
-      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 10))
+      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
@@ -56,7 +56,7 @@
         ;; (when (< @node-count (count nodes))
         ;;   (println "---------------")
         ;;   (doseq [node nodes] 
-        ;;     (println "is-fixed: " (:is-fixed (:data node)) "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
+        ;;     (println "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
         ;; (reset! node-count (count nodes))
         (grow/drawPath path))))
   (swap! counter inc)
