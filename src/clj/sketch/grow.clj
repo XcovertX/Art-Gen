@@ -228,12 +228,15 @@
 
 (defn eject
   "remove nodes from a specific index"
-  [vec pos]
+  [nodes pos]
   (apply conj
          (if (= pos 1)
-           (subvec vec 0)
-           (subvec vec 0 (- pos 1)))
-         (subvec vec pos)))
+           (subvec nodes 0)
+           (subvec nodes 0 (- pos 1)))
+         (subvec nodes pos)))
+
+
+
 
 (defn applyBrownianMotion
   "simulates minor motion"
@@ -260,6 +263,22 @@
             (mapv (fn [node]
                    (update-in node [:data] assoc :is-fixed true))
                  (:nodes path)))) 
+
+
+
+
+;; needs work -- not finished
+(defn removeOutOfBoundsNodes
+  "removes nodes that exits a given boundry"
+  [path left-boundary right-boundary top-boundary]
+  (let [nodes (mapv (fn [node]
+                      (if ()
+                        (update-in node [:data] assoc :is-fixed true)
+                        ()))
+                         (filterv #(<= (get (:pos %) 0) right-boundary) (:nodes path)))
+        right-node (filterv #(<= (get (:pos %) 0) right-boundary) (:nodes path))
+        top-nodes  (filterv #(>= (get (:pos %) 0) top-boundary) (:nodes path))]
+    ))
 
 
 (defn amplifyFixed
@@ -700,6 +719,41 @@
   "increments a given path's age"
   [path]
   (update-in path [:age] inc))
+
+(defn incNodeAge
+  "increments a given node's age"
+  [node]
+  (update-in node [:data :age] inc))
+
+(defn incGrowthCount
+  "increments a given node's growth count"
+  [node]
+  (update-in node [:data :growth-iteration-count] inc))
+
+(defn resetGrowthCount
+  "resets a given node's growth count"
+  [node]
+  (update-in node [:data] assoc :growth-iteration-count 0))
+
+(defn moveNodeXPositionRight
+  "adjust's the given node's X position right by the given distance"
+  [node distance]
+  (update-in node [:pos] assoc 0 (+ (get (:pos node) 0) distance)))
+
+(defn moveNodeXPositionLeft
+  "adjust's the given node's X position left by the given distance"
+  [node distance]
+  (update-in node [:pos] assoc 0 (- (get (:pos node) 0) distance)))
+
+(defn moveNodeYPositionUp
+  "adjust's the given node's Y position up by the given distance"
+  [node distance]
+  (update-in node [:pos] assoc 1 (- (get (:pos node) 1) distance)))
+
+(defn moveNodeYPositionDown
+  "adjust's the given node's Y position down by the given distance"
+  [node distance]
+  (update-in node [:pos] assoc 1 (+ (get (:pos node) 1) distance)))
 
 (defn indexFixed
   "Returns a lazy sequence of [index, item] pairs, where items come
