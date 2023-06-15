@@ -1,7 +1,7 @@
 (ns sketch.hitomezashi
   (:require [quil.core :refer [line random]]
             [sketch.divider :as div]) 
-  (:refer [clojure.pprint]))
+  (:use [clojure.pprint]))
 
 (def vowels #{\a \e \i \o \u})
 (def consonants #{\b \c \d \f \g \h \j \k \l \m \n \p \q \r \s \t \v \w \x \y \z})

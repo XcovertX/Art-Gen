@@ -33,6 +33,7 @@
 (def default-path-settings
   "Settings to be included with a path not provided with any"
   (hash-map 
+   :is-closed true
    :fill-color nil
    :stroke-color nil
    :draw-edges true

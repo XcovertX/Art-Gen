@@ -9,7 +9,8 @@
             [sketch.grow :as grow]
             [sketch.coral :as coral]
             [sketch.tree :as tree]
-            [sketch.shapes :as shape])
+            [sketch.shapes :as shape]
+            [sketch.draw :as draw])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -20,8 +21,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1000)
-(def window-height 1000)
+(def window-width 500)
+(def window-height 500)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
@@ -37,19 +38,21 @@
   (background 0 0 0)
   (reset! p {:paths {}})
   (reset! counter 0)
-  (reset! tree/counter 0)
+  (reset! tree/counter 0) 
   (reset! node-count 0)
+  (no-loop)
   )
 
 (defn draw []
-  (background 0 0 0)
+  ;; (background 0 0 0)
   (when (= @counter 0)
     (do
-      ;; (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
-      (swap! p assoc-in [:paths] (shape/createRectangle 5))
+      ;; (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5)) 
+      (swap! p assoc-in [:paths] (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)}))
+      (println (println @p))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
-        (grow/drawPath path)))
+        (draw/drawPath path))))
 
     ;; (do
     ;;   (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
