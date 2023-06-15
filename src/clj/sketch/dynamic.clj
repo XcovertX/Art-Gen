@@ -40,30 +40,32 @@
   (reset! counter 0)
   (reset! tree/counter 0) 
   (reset! node-count 0)
-  (no-loop)
+  ;; (no-loop)
   )
 
 (defn draw []
-  ;; (background 0 0 0)
-  (when (= @counter 0)
+  (background 0 0 0)
+  (if (= @counter 0)
     (do
       ;; (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5)) 
-      (swap! p assoc-in [:paths] (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)}))
+      (swap! p assoc-in [:paths] (shape/createRectangle (- window-width @counter) (- window-height @counter) {:x (/ window-width 2) :y (/ window-height 2)}))
       (println (println @p))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
-        (draw/drawPath path))))
+        (draw/drawPath path)))
 
-    ;; (do
-    ;;   (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
-    ;;   (doseq [path (:paths @p)
-    ;;           :let [nodes (:nodes path)]]
-    ;;     ;; (when (< @node-count (count nodes))
-    ;;     ;;   (println "---------------")
-    ;;     ;;   (doseq [node nodes] 
-    ;;     ;;     (println "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
-    ;;     ;; (reset! node-count (count nodes))
-    ;;     (grow/drawPath path))))
+    (do
+      ;; (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
+      (swap! p assoc-in [:paths 0] (shape/adjustRectangle (get (:paths @p) 0) (- window-width @counter) (- window-height @counter)))
+      ;; (println @p)
+      (doseq [path (:paths @p)
+              :let [nodes (:nodes path)]]
+        ;; (when (< @node-count (count nodes)) 
+        ;;   (println "---------------")
+        ;;   (doseq [node nodes] 
+        ;;     (println "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
+        ;; (reset! node-count (count nodes))
+        (draw/drawPath path))))
   (swap! counter inc)
   ;; (Thread/sleep 100)
   )
