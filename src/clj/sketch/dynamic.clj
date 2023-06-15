@@ -8,7 +8,8 @@
             [sketch.calculations :as cal]
             [sketch.grow :as grow]
             [sketch.coral :as coral]
-            [sketch.tree :as tree])
+            [sketch.tree :as tree]
+            [sketch.shapes :as shape])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -42,23 +43,24 @@
 
 (defn draw []
   (background 0 0 0)
-  (if (= @counter 0)
+  (when (= @counter 0)
     (do
-      (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
+      ;; (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5))
+      (swap! p assoc-in [:paths] (shape/createRectangle 5))
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         (grow/drawPath path)))
 
-    (do
-      (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
-      (doseq [path (:paths @p)
-              :let [nodes (:nodes path)]]
-        ;; (when (< @node-count (count nodes))
-        ;;   (println "---------------")
-        ;;   (doseq [node nodes] 
-        ;;     (println "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
-        ;; (reset! node-count (count nodes))
-        (grow/drawPath path))))
+    ;; (do
+    ;;   (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
+    ;;   (doseq [path (:paths @p)
+    ;;           :let [nodes (:nodes path)]]
+    ;;     ;; (when (< @node-count (count nodes))
+    ;;     ;;   (println "---------------")
+    ;;     ;;   (doseq [node nodes] 
+    ;;     ;;     (println "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
+    ;;     ;; (reset! node-count (count nodes))
+    ;;     (grow/drawPath path))))
   (swap! counter inc)
   ;; (Thread/sleep 100)
   )

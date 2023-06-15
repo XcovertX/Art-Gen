@@ -1,15 +1,7 @@
 (ns sketch.hitomezashi
-  (:require [quil.core :refer :all]
-            [clojure.java.shell :refer [sh]]
-            [sketch.divider :as div]
-            [sketch.calculations :as cal])
-  (:use [incanter.core :only [$=]])
-  (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
-  (:use [clojure.pprint])
-  (:use [clojure.set :only [union]])
-  (:use [clojure.contrib.map-utils :only [deep-merge-with]])
-  (:import [org.apache.commons.math3.distribution ParetoDistribution])
-  (:import [processing.core PShape PGraphics]))
+  (:require [quil.core :refer [line random]]
+            [sketch.divider :as div]) 
+  (:refer [clojure.pprint]))
 
 (def vowels #{\a \e \i \o \u})
 (def consonants #{\b \c \d \f \g \h \j \k \l \m \n \p \q \r \s \t \v \w \x \y \z})
@@ -19,14 +11,14 @@
   [segment first xDif yDif]
   (loop [i 0
          alternate first]
-    (if (< (+ i 1) (count segment))
+    (when (< (+ i 1) (count segment))
       (let [from (get segment i)
             to (get segment (+ i 1))
             x1 (+ (:x from) xDif)
             y1 (+ (:y from) yDif)
             x2 (+ (:x to) xDif)
             y2 (+ (:y to) yDif)]
-        (if (= alternate true)
+        (when (= alternate true)
           (line x1 y1 x2 y2))
         (recur (inc i) (not alternate))))))
 
@@ -48,7 +40,7 @@
                                 (mapv
                                  (fn [[x y]] (conj {:x x :y y}))
                                  (for [coord intersections]
-                                   (if (= (:x coord) (* i stitchSize))
+                                   (when (= (:x coord) (* i stitchSize))
                                      [(:x coord) (:y coord)]))))))))))
 
 (defn buildYStitchSegments
@@ -69,13 +61,13 @@
                                 (mapv
                                  (fn [[x y]] (conj {:x x :y y}))
                                  (for [coord intersections]
-                                   (if (= (:y coord) (* i stitchSize))
+                                   (when (= (:y coord) (* i stitchSize))
                                      [(:x coord) (:y coord)]))))))))))
 (defn boolify-it
   "converts a given input into a boolean representation"
   [input]
   (let [rand (random 100)
-        axis (if (string? input)
+        axis (when (string? input)
                (if (< rand 50)
                  (filterv some? (map #(when (vowels %1) %2) input (range)))
                  (filterv some? (map #(when (consonants %1) %2) input (range)))))]
@@ -103,13 +95,11 @@
         yAxisBools (boolify-it yAxisInput)]
 
     (loop [i 0]
-      (if (< i xStitchCount)
-        (do
-          (draw-stitch-segment (get xSegments i) (get xAxisBools i) xDif yDif)
-          (recur (inc i)))))
+      (when (< i xStitchCount)
+        (draw-stitch-segment (get xSegments i) (get xAxisBools i) xDif yDif)
+        (recur (inc i))))
 
     (loop [i 0]
-      (if (< i yStitchCount)
-        (do
-          (draw-stitch-segment (get ySegments i) (get yAxisBools i) xDif yDif)
-          (recur (inc i)))))))
+      (when (< i yStitchCount)
+        (draw-stitch-segment (get ySegments i) (get yAxisBools i) xDif yDif)
+        (recur (inc i))))))
