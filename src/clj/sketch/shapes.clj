@@ -66,3 +66,21 @@
                         (sture/buildNode {:x x-max :y y-min})
                         (sture/buildNode {:x x-min :y y-min})]))])
   )
+
+(defn adjustRectangle
+  "adjusts the length and width of a rectangle" 
+  [path length width]
+  (let [new-path (atom path)
+        nodes (:nodes path)
+        center {:x (/ length 2) :y (/ width 2)}
+        x-min (- (:x center) (/ length 2))
+        x-max (+ (:x center) (/ length 2))
+        y-min (- (:y center) (/ width 2))
+        y-max (+ (:y center) (/ width 2))]
+    ;; (println length width center x-min x-max y-min)
+    (swap! new-path assoc-in [:nodes] [])
+    (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path)
+                                            (assoc-in (get nodes 0) [:position] (sture/getPosition {:x x-min :y y-max}))
+                                            (assoc-in (get nodes 1) [:position] (sture/getPosition {:x x-max :y y-max}))
+                                            (assoc-in (get nodes 2) [:position] (sture/getPosition {:x x-max :y y-min}))
+                                            (assoc-in (get nodes 3) [:position] (sture/getPosition {:x x-min :y y-min}))))))
