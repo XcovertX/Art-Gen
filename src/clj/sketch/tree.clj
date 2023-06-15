@@ -334,7 +334,6 @@
                   right-node (setParentNodeID right-node node)
                   updated-node (makeBranchUnready node)
                   updated-node (incBranchCount updated-node)]
-
               (when (or (isLeftSide? node) (isTop? node))
                 (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) left-node)))
               (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node))
