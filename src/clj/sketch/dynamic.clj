@@ -21,7 +21,7 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 800)
+(def window-width 1100)
 (def window-height 800)
 
 (def img-url "source_images/eye.jpg")
@@ -51,7 +51,7 @@
       (swap! p assoc-in [:paths] 
              [
               ;; (shape/createRectangle (- window-width @counter) (- window-height @counter) {:x (/ window-width 2) :y (/ window-height 2)})
-              (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 5)
+              (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 8)
               ]) 
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
@@ -72,7 +72,7 @@
         ;; (reset! node-count (count nodes))
         (draw/drawPath path))))
   (swap! counter inc)
-  (Thread/sleep 100)
+  ;; (Thread/sleep 100)
   )
 
 

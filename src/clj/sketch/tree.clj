@@ -3,7 +3,7 @@
             [clojure.java.shell :refer [sh]]
             [sketch.calculations :as calc]
             [sketch.grow :as grow]
-            [sketch.shapes :as shape])
+            [sketch.path :as path])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -11,12 +11,6 @@
   (:use [clojure.contrib.map-utils :only [deep-merge-with]])
   (:import [org.apache.commons.math3.distribution ParetoDistribution])
   (:import [processing.core PShape PGraphics]))
-
-;; ------ Notes ----------------------
-;; make option to choose connected nodes with no overlap
-;; make multiple path option where each tree can be on individual paths
-;; add noise adjusting function to make branches bigger or smaller
-
 
 ;; ------ Definitions ----------------
 
@@ -41,7 +35,7 @@
    :growth-iteration-count 0
    :parent-node-id nil
    :min-distance 0
-   :max-distance 3
+   :max-distance 4.5
    :velocity 0
    :next-position nil
    :branch-rate 0
@@ -98,8 +92,8 @@
 (defn buildBottomNode
   "builds an unmovable fixed node on the bottom of the tree"
   [node position side fixed]
-  (shape/buildNode
-   (shape/getPosition position) 
+  (path/buildNode
+   (path/getPosition position) 
    default-tree-node-settings
    (assoc default-tree-node-data
            :side side
@@ -114,7 +108,7 @@
         first-node (get nodes 0)
         length (count nodes) ;
         last-node (get nodes (- length 1))
-        distance (shape/getDistance first-node last-node)
+        distance (path/getDistance first-node last-node)
         seeds (vec (distinct (sort (vec (take seed-count (repeatedly #(rand-int distance)))))))
         settings (if (:uniform-node-settings? (:settings path))
                    (:settings path)
@@ -122,12 +116,12 @@
     (doseq [node-index (range (+ (count seeds) 2))]
       (when (and (not= node-index 0)
                  (not= node-index (+ (count seeds) 1)))
-        (let [connected-nodes (shape/getConnectedNodes (:nodes @new-path) node-index (:is-closed (:data @new-path)))
+        (let [connected-nodes (path/getConnectedNodes (:nodes @new-path) node-index (:is-closed (:data @new-path)))
               next-node (:next connected-nodes)
               previous-node (:prev connected-nodes)
               new-x (get seeds (- node-index 1))
               new-y (:y (:position previous-node)) 
-              new-node (shape/buildNode {:x new-x :y new-y} settings default-tree-node-data)
+              new-node (path/buildNode {:x new-x :y new-y} settings default-tree-node-data)
               new-node (update-in new-node [:data] assoc
                                   :max-distance 3
                                   :branch-angle 0 
@@ -137,13 +131,13 @@
                                   :side "top"
                                   :delay-growth-by (rand-int 200)
                                   :parent-node-id 0)] 
-          (swap! new-path assoc-in [:nodes] (shape/insert (:nodes @new-path) node-index new-node)))))
+          (swap! new-path assoc-in [:nodes] (path/insert (:nodes @new-path) node-index new-node)))))
     @new-path))
 
 (defn seed-tree
   "creates line and seeds it with "
   [pos1 pos2 seed-count]
-  (injectSeedsOnOnePath (shape/createLinePath pos1 pos2) seed-count))
+  (injectSeedsOnOnePath (path/createLinePath pos1 pos2) seed-count))
 
 (defn makeBranchReady
   "this marks a node as 'ready to branch'"
@@ -263,7 +257,7 @@
   (if (and (> node-index 0)
            (< node-index (- (count (:nodes path)) 1))
            (not (:is-end node)))
-    (assoc-in path [:nodes] (shape/insert (:nodes path) (- node-index 1) node))
+    (assoc-in path [:nodes] (path/insert (:nodes path) (- node-index 1) node))
     path))
 
 (defn insertNodeRight
@@ -272,7 +266,7 @@
   (if (and (> node-index 0)
            (< node-index (- (count (:nodes path)) 1))
            (not (:is-end node))) 
-    (assoc-in path [:nodes] (shape/insert (:nodes path) node-index node))
+    (assoc-in path [:nodes] (path/insert (:nodes path) node-index node))
     path))
 
 (defn branch
@@ -289,7 +283,7 @@
             
             (if (and (branchReady? node)
                      (growthDelayComplete? node)) 
-              (let [connected-nodes (shape/getConnectedNodes (:nodes path) node-index (:is-closed (:data path)))
+              (let [connected-nodes (path/getConnectedNodes (:nodes path) node-index (:is-closed (:data path)))
                     new-left-x (getNewLeftX node)
                     new-left-y (getNewLeftY node)
                     new-right-x (getNewRightX node)
@@ -324,7 +318,7 @@
 (defn grow
   "causes each tree branch to grow"
   [path top-rate side-rate]
-  (let [new-path (atom (grow/incPathAge path))] 
+  (let [new-path (atom (path/incPathAge path))] 
     (swap! new-path assoc-in [:nodes] [])
     (doseq [node-index (range (count (:nodes path)))] 
       (let [node (get (:nodes path) node-index)]
@@ -333,35 +327,35 @@
             (when (isTop? node)
               (if (and (not (branchReady? node))
                        (growthDelayComplete? node))
-                (let [updated-node (grow/moveNodeYPositionUp node top-rate)
+                (let [updated-node (path/moveNodeYPositionUp node top-rate)
                       updated-node (grow/incGrowthCount updated-node)
-                      updated-node (grow/incNodeAge updated-node)
+                      updated-node (path/incNodeAge updated-node)
                       updated-node (if (minimumGrowthAchieved? updated-node)
                                      (makeBranchReady (grow/resetGrowthCount updated-node))
                                      updated-node)]
 
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))
-                (let [updated-node (grow/incNodeAge node)]
+                (let [updated-node (path/incNodeAge node)]
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))))
 
             (when (isLeftSide? node)
               (if (isBottom? node)
                 (let [updated-node (grow/incGrowthCount node)
-                      updated-node (grow/incNodeAge updated-node)
-                      updated-node (grow/moveNodeXPositionLeft (grow/resetGrowthCount updated-node) (/ side-rate 10))]
+                      updated-node (path/incNodeAge updated-node)
+                      updated-node (path/moveNodeXPositionLeft (grow/resetGrowthCount updated-node) (/ side-rate 10))]
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))
                 (if (not (branchReady? node))
                   (let [updated-node (if (matured? node)
                                        (if (not (reachedMaxDistanceFromTop? node))
-                                         (let [updated-node (grow/moveNodeXPositionLeft node (/ side-rate (+ (rand-int 10) 4)))
-                                               updated-node (grow/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
+                                         (let [updated-node (path/moveNodeXPositionLeft node (/ side-rate (+ (rand-int 10) 4)))
+                                               updated-node (path/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
                                            updated-node)
-                                         (let [updated-node (grow/moveNodeXPositionLeft node (/ side-rate (+ (rand-int 8) 5)))
-                                               updated-node (grow/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
+                                         (let [updated-node (path/moveNodeXPositionLeft node (/ side-rate (+ (rand-int 8) 5)))
+                                               updated-node (path/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
                                            updated-node))
                                        node)
                         updated-node (grow/incGrowthCount updated-node)
-                        updated-node (grow/incNodeAge updated-node)
+                        updated-node (path/incNodeAge updated-node)
                         updated-node (if (and
                                           (minimumGrowthAchieved? updated-node)
                                           (not (branchCountMaxed? updated-node)))
@@ -376,21 +370,21 @@
             (when (isRightSide? node)
               (if (isBottom? node)
                 (let [updated-node (grow/incGrowthCount node)
-                      updated-node (grow/incNodeAge updated-node)
-                      updated-node (grow/moveNodeXPositionRight (grow/resetGrowthCount updated-node) (/ side-rate 10))]
+                      updated-node (path/incNodeAge updated-node)
+                      updated-node (path/moveNodeXPositionRight (grow/resetGrowthCount updated-node) (/ side-rate 10))]
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))
                 (if (not (branchReady? node))
                   (let [updated-node (if (matured? node)
                                        (if (not (reachedMaxDistanceFromTop? node))
-                                         (let [updated-node (grow/moveNodeXPositionRight node (/ side-rate (+ (rand-int 10) 4)))
-                                               updated-node (grow/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
+                                         (let [updated-node (path/moveNodeXPositionRight node (/ side-rate (+ (rand-int 10) 4)))
+                                               updated-node (path/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
                                            updated-node)
-                                         (let [updated-node (grow/moveNodeXPositionRight node (/ side-rate (+ (rand-int 8) 5)))
-                                               updated-node (grow/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
+                                         (let [updated-node (path/moveNodeXPositionRight node (/ side-rate (+ (rand-int 8) 5)))
+                                               updated-node (path/moveNodeYPositionUp updated-node (/ side-rate (+ (rand-int 5) 2)))]
                                            updated-node))
                                        node)
                         updated-node (grow/incGrowthCount updated-node)
-                        updated-node (grow/incNodeAge updated-node)
+                        updated-node (path/incNodeAge updated-node)
                         updated-node (if (and
                                           (minimumGrowthAchieved? updated-node)
                                           (not (branchCountMaxed? updated-node)))
@@ -437,9 +431,9 @@
 
       (swap! new-paths assoc-in [path-index] (grow (get @new-paths path-index) 4 3))
 
-      (when (> (:age (:data (get @new-paths path-index))) 300)
+      (when (> (:age (:data (get @new-paths path-index))) 400)
 
-        (swap! new-paths assoc-in [path-index] (grow/setAllNodesToFixed (get @new-paths path-index))))
-      (swap! new-paths assoc-in [path-index] (grow/incPathAge (get @new-paths path-index))))
+        (swap! new-paths assoc-in [path-index] (path/setAllNodesToFixed (get @new-paths path-index))))
+      (swap! new-paths assoc-in [path-index] (path/incPathAge (get @new-paths path-index))))
     
     @new-paths))

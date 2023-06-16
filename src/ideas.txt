@@ -1,0 +1,39 @@
+----------------- Ideas ---------------------
+-echo that redraws a line parallel to a given line.
+    given: -number of redraws
+           -percent of opacity to inc or dec each redraw
+           -amount of noise introduced to each redraw 
+
+-plants that can grow on structures
+    -a variety of trees
+    -mushrooms
+    -add noise adjusting function to make branches bigger or smaller
+
+-foreground builder using paths
+    -make option to choose connected nodes with no overlap
+    -make multiple path option where each tree can be on individual paths
+
+
+-different ways to render a path after it's formed
+    -as an example: a mushroom path is grown off the side of a structure
+        the mushroom could then be drawn by filling it with a series of 
+        echos lines as mentioned above
+
+-output to G-code
+
+-add paths and nodes to the triangle mapping feature for further manipulation
+    -make a in a linked list where each node in the list is
+        represnts an intersecting point of the triangles
+        each node tracks: 
+        - all connected nodes
+        - the distances to each connected node
+        - node data and settings
+        - all connected path data and settings
+
+-user interface
+
+-forground to background fill tool 
+
+-ray tracing tool
+
+
