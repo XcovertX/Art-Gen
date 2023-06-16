@@ -21,8 +21,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 500)
-(def window-height 500)
+(def window-width 800)
+(def window-height 800)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
@@ -47,27 +47,32 @@
   (background 0 0 0)
   (if (= @counter 0)
     (do
-      ;; (swap! p assoc-in [:paths] (tree/seed-tree window-width window-height 5)) 
-      (swap! p assoc-in [:paths] (shape/createRectangle (- window-width @counter) (- window-height @counter) {:x (/ window-width 2) :y (/ window-height 2)}))
-      (println (println @p))
+      
+      (swap! p assoc-in [:paths] 
+             [
+              ;; (shape/createRectangle (- window-width @counter) (- window-height @counter) {:x (/ window-width 2) :y (/ window-height 2)})
+              (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 5)
+              ]) 
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
+                  (doseq [node nodes]
+                    (println "pos:" (:position node) "id:" (:ID node) "pid:" (:parent-node-id (:data node)) "age:" (:age (:data path)) "dgb:" (:delay-growth-by (:data node)) "branch-count:" (:branch-count (:data node))))
         (draw/drawPath path)))
-
+    
     (do
-      ;; (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
-      (swap! p assoc-in [:paths 0] (shape/adjustRectangle (get (:paths @p) 0) (- window-width @counter) (- window-height @counter)))
-      ;; (println @p)
+      (swap! p assoc-in [:paths] (tree/applyTreeGrowth (:paths @p) window-width window-height))
+      ;; (swap! p assoc-in [:paths 0] (shape/adjustRectangle (get (:paths @p) 0) (- window-width @counter) (- window-height @counter) {:x (/ window-width 2) :y (/ window-height 2)}))
+
       (doseq [path (:paths @p)
               :let [nodes (:nodes path)]]
         ;; (when (< @node-count (count nodes)) 
         ;;   (println "---------------")
         ;;   (doseq [node nodes] 
-        ;;     (println "pos: " (:pos node) " id: " (:id node) " pid: " (:parent-node-id node) " age: " (:age path) " dgb: " (:delay-growth-by (:data node)) " branch-count: " (:branch-count (:data node)))))
+        ;;     (println "pos:" (:position node) "id:" (:ID node) "pid:" (:parent-node-id (:data node)) "age:" (:age (:data path)) "dgb:" (:delay-growth-by (:data node)) "branch-count:" (:branch-count (:data node))))) 
         ;; (reset! node-count (count nodes))
         (draw/drawPath path))))
   (swap! counter inc)
-  ;; (Thread/sleep 100)
+  (Thread/sleep 100)
   )
 
 
