@@ -718,7 +718,7 @@
 (defn incPathAge
   "increments a given path's age"
   [path]
-  (update-in path [:age] inc))
+  (update path [:data :age] inc))
 
 (defn incNodeAge
   "increments a given node's age"
@@ -738,22 +738,22 @@
 (defn moveNodeXPositionRight
   "adjust's the given node's X position right by the given distance"
   [node distance]
-  (update-in node [:pos] assoc 0 (+ (get (:pos node) 0) distance)))
+  (update-in node [:position] assoc :x (+ (:x (:position node)) distance)))
 
 (defn moveNodeXPositionLeft
   "adjust's the given node's X position left by the given distance"
   [node distance]
-  (update-in node [:pos] assoc 0 (- (get (:pos node) 0) distance)))
+  (update-in node [:position] assoc :x (- (:x (:position node)) distance)))
 
 (defn moveNodeYPositionUp
   "adjust's the given node's Y position up by the given distance"
   [node distance]
-  (update-in node [:pos] assoc 1 (- (get (:pos node) 1) distance)))
+  (update-in node [:position] assoc :y (- (:y (:position node)) distance)))
 
 (defn moveNodeYPositionDown
   "adjust's the given node's Y position down by the given distance"
   [node distance]
-  (update-in node [:pos] assoc 1 (+ (get (:pos node) 1) distance)))
+  (update-in node [:position] assoc :y (+ (:y (:position node)) distance)))
 
 (defn indexFixed
   "Returns a lazy sequence of [index, item] pairs, where items come
