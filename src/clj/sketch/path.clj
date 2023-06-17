@@ -67,7 +67,7 @@
 
 (def default-path-data
   "Data to be included with a path not provided with any"
-  (hash-map :age 0))
+  (hash-map :age 0 :type "path"))
 
 (def default-path-settings
   "Settings to be included with a path not provided with any"
@@ -88,7 +88,7 @@
 (defn incPathAge
   "increments a given path's age"
   [path]
-  (update path [:data :age] inc))
+  (update-in path [:data :age] inc))
 
 (defn incNodeAge
   "increments a given node's age"

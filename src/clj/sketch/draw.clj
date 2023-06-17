@@ -16,7 +16,7 @@
         node-color (when (:bug-finder-mode? (:settings path))
                      (colorSpectrum nodes))]
     (doseq [node-index (range (count nodes))
-            :let [connected-nodes (path/getConnectedNodes nodes node-index (:is-closed (:settings path)))
+            :let [connected-nodes (path/getConnectedNodes nodes node-index (:is-closed (:data path)))
                   node (get nodes node-index)
                   next (:next connected-nodes)
                   prev (:prev connected-nodes)
@@ -26,7 +26,7 @@
                   next-y (:y (:position next))
                   prev-x (:x (:position prev))
                   prev-y (:y (:position prev))]]
-      (when (not (:is-fixed path))
+      (when (not (:is-fixed (:data path)))
         (when (:draw-edges (:settings path))
           (when (not= next nil)
             (line x y next-x next-y)))
@@ -43,7 +43,7 @@
           (when (:is-random (:data node))
             (ellipse x y 2 2)))
         (when (:draw-new-random-injections? (:settings path))
-          (when (and (:is-random (:data node)) (= (:lifespan node) 0))
+          (when (and (:is-random (:data node)) (= (:age node) 0))
             (stroke 255 0 255)
             (ellipse x y 2 2)
             (stroke (get node-color node-index) 360 360)))))))

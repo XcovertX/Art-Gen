@@ -16,6 +16,7 @@
 
 (def default-tree-path-data
   (hash-map
+   :type "tree"
    :age 1
    :branch-rate 50
    :branch-angle 0
@@ -74,7 +75,7 @@
    :uniform-node-settings? false))
 
 (def default-tree-path-settings
-  (hash-map
+  (hash-map 
    :fill-color nil
    :stroke-color nil
    :draw-edges true
@@ -135,9 +136,11 @@
     @new-path))
 
 (defn seed-tree
-  "creates line and seeds it with "
+  "creates a tree path comprised of a line and seeds it with a given number of nodes"
   [pos1 pos2 seed-count]
-  (injectSeedsOnOnePath (path/createLinePath pos1 pos2) seed-count))
+  (let [path (path/createLinePath pos1 pos2)
+        tree-path (update-in path [:data] assoc :type "tree")]
+    (injectSeedsOnOnePath tree-path seed-count)))
 
 (defn makeBranchReady
   "this marks a node as 'ready to branch'"
