@@ -272,6 +272,100 @@
     (assoc-in path [:nodes] (path/insert (:nodes path) node-index node))
     path))
 
+(defn getTopNodes
+  "returns a vec with indexes of al nodes marked 'top'"
+  [nodes] 
+  (let [mi-nodes (map-indexed vector nodes)]
+    (filterv #(= (:side (:data (second %))) "top") mi-nodes)))
+
+(defn getNextRightBottomNodeIndex
+  "returns the index of the next node marked 'bottom' of the right side of the tree"
+  [nodes]
+  (let [indexs-and-nodes (map-indexed vector nodes)]
+    (first (mapv #(:is-bottom (:data (second %))) indexs-and-nodes))))
+
+(defn getNextLeftBottomNodeIndex
+  "returns the index of the next node marked 'bottom' of the left side of the tree"
+  [nodes]
+  (let [indexs-and-nodes (map-indexed vector nodes)]
+    (last (mapv #(:is-bottom (:data (second %))) indexs-and-nodes))))
+
+(defn getRightNodesInTree
+  "returns a vec of all right side nodes, in order from bottom node to the top node"
+  [nodes top-node-index]
+  (let [bottom-node-index (getNextRightBottomNodeIndex (subvec nodes top-node-index))]
+   (subvec nodes (- top-node-index 1) bottom-node-index)))
+
+(defn getLeftNodesInTree
+  "returns a vec of all left side nodes, in order from bottom node to the top node"
+  [nodes top-node-index]
+  (let [bottom-node-index (getNextLeftBottomNodeIndex (subvec nodes 0 (+ top-node-index 1)))]
+    (subvec nodes (- bottom-node-index 1) top-node-index)))
+
+(defn nodesOverlap?
+  "checks if the given left and right nodes have overlapping x-coords"
+  [left-node right-node]
+  (< (:x (:position right-node)) (:x (:position left-node))))
+
+(defn getNonOverlappinNodes
+  "returns a vec of nonoverlapping nodes representing the valley between tree top to tree top"
+  [nodes-a nodes-b]
+;; (println (map (fn [x] (:position x)) nodes-a))
+  ;; (println "na:" (map (fn [x] [(:x (:position x)) (:y (:position x))]) nodes-b))
+  ;; (println "nb:" (map (fn [x] [(:x (:position x)) (:y (:position x))]) nodes-b))
+  ;; (println "nb count:" (count (map (fn [x] [(:x (:position x)) (:y (:position x))]) nodes-b)))
+  ;; (println "concat na nb:" (mapv (fn [x] [(:x (:position x)) (:y (:position x))]) (concat nodes-a nodes-b)))
+;; (println "fn fn:" (mapv (fn [x] [(:x (:position x)) (:y (:position x))]) (mapv (fn [a]
+;;                                                                                  (mapv (fn [b]
+;;                                                                                          (when (nodesOverlap? a b)
+;;                                                                                            [a b])) nodes-b)) nodes-a)))
+  (let [combined-nodes (into [] (concat nodes-a nodes-b))]
+    (filterv #(not (some (fn [u] (= (:x (:position u)) (:x (:position %))))
+                        (vec
+                         (remove nil?
+                                 (set
+                                  (into []
+                                        (flatten
+                                         (mapv (fn [a]
+                                                 (mapv (fn [b]
+                                                         (when (nodesOverlap? a b)
+                                                           [a b])) nodes-b)) nodes-a)))))))) combined-nodes)))
+
+(defn removeOverLappingTreeNodes
+  "removes the sections of the path that overlap"
+  [path]
+  (let [nodes (:nodes path)
+        top-node-positions (getTopNodes nodes)
+        new-path (atom path)
+        fst 0
+        lst (- (count top-node-positions) 1)]
+    (swap! new-path assoc-in [:nodes] [])
+    (doseq [index (range (count top-node-positions))] ;; this need to be a count of spans between tops, not tops
+      (println "idx" index)
+      (println "cnt" (range (count top-node-positions)))
+      (case index
+        0 (do
+            (println "fst")
+            (println [(first nodes)])
+            (println (map (fn [x] (first x)) top-node-positions))
+            (println (first (get top-node-positions index)))
+            (println @new-path)
+            (swap! new-path assoc-in [:nodes] (into [] (concat (:nodes @new-path) (getNonOverlappinNodes
+                                                                                   [(first nodes)]
+                                                                                   (subvec nodes 0 (first (get top-node-positions index))))))))
+        (- (count top-node-positions) 1) (do
+                                           (println "lst")
+                                           (swap! new-path assoc-in [:nodes] (into [] (concat (:nodes @new-path) (getNonOverlappinNodes
+                                                                                                                  (subvec nodes (first (get top-node-positions index)))
+                                                                                                                  [(last nodes)])))))
+        (do
+          (println "default")
+          (getNonOverlappinNodes
+           (subvec nodes (first (get top-node-positions index)))
+           (subvec nodes (getNextLeftBottomNodeIndex (subvec nodes (first (get top-node-positions index))))))
+          )))
+    @new-path))
+
 (defn branch
   "causes tree structure to branch"
   [path]
@@ -401,28 +495,9 @@
           (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node)))))
     @new-path))
 
-(defn getTopNodes
-  "returns a vec with indexes of al nodes marked 'top'"
-  [nodes]
-  (filterv #(= (:side (:data %)) "top") nodes))
-
-(defn removeOverLappingTreeNodes
-  "removes the sections of the path that overlap"
-  [path low-x high-x]
-  (let [nodes (:nodes path)
-        new-nodes (atom [])
-        top-node-positions (getTopNodes (:nodes path))]
-    (doseq [index (range (count top-node-positions))]
-      (when (= index 0)
-        (swap! new-nodes assoc [] (filterv
-                                   #(>= (:x (:position %) 0) low-x)
-                                   (subvec nodes 0 (get top-node-positions index)))))
-      
-      )
-    (mapv (fn [x] (* x x)) (range 1 10))))
 
 ;; --------- Primary Growth Iterator Functions ---------------
-
+(def i (atom 0))
 (defn applyTreeGrowth
   [paths width height]
   
@@ -434,9 +509,11 @@
 
       (swap! new-paths assoc-in [path-index] (grow (get @new-paths path-index) 4 3))
 
-      (when (> (:age (:data (get @new-paths path-index))) 400)
-
-        (swap! new-paths assoc-in [path-index] (path/setAllNodesToFixed (get @new-paths path-index))))
+      (when (and (= @i 0)
+                 (> (:age (:data (get @new-paths path-index))) 400))
+        (swap! new-paths assoc-in [path-index] (removeOverLappingTreeNodes (get @new-paths path-index)))
+        (swap! new-paths assoc-in [path-index] (path/setAllNodesToFixed (get @new-paths path-index)))
+        (swap! i inc))
       (swap! new-paths assoc-in [path-index] (path/incPathAge (get @new-paths path-index))))
     
     @new-paths))

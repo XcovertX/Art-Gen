@@ -330,81 +330,81 @@
                   (mapv vector (range (- w 10)) (vec (map (fn [_] 0) (range (- w 10)))))
                   (mapv vector (range (- w 10)) (vec (map (fn [_] (- h 1)) (range (- w 10)))))))))
 
-(defn createLine
-  "creates a node list containg 2 nodes"
-  [pos1 pos2]
-  (vector
-   (buildNode (get pos1 0) (get pos1 1) default-settings true true false false)
-   (buildNode (get pos2 0) (get pos2 1) default-settings true true false false)))
+;; (defn createLine
+;;   "creates a node list containg 2 nodes"
+;;   [pos1 pos2]
+;;   (vector
+;;    (buildNode (get pos1 0) (get pos1 1) default-settings true true false false)
+;;    (buildNode (get pos2 0) (get pos2 1) default-settings true true false false)))
 
-(defn addLinePath
-  [pos1 pos2]
-  (buildPath (createLine pos1 pos2) path-settings false [] true 0.45 10 false))
-
-
-(defn createTriangle
-  [x1 y1 x2 y2 x3 y3]
-  (buildPath
-   (vector
-    (buildNode x2 y2 default-settings false false false false)
-    (buildNode x3 y3 default-settings true true false false))
-   path-settings false [] true 0.45 10 false))
-
-(defn createPathWithFixedNodes
-  []
-  (buildPath
-   (vector
-    (buildNode 50 50 default-settings true false false false)
-    (buildNode 150 70 default-settings false false false false)
-    (buildNode 120 70 default-settings false false false false)
-    (buildNode 150 900 default-settings false false false false)
-    (buildNode 10 70 default-settings false false false false)
-    (buildNode 30 40 default-settings false false false false)
-    (buildNode 150 70 default-settings false false false false)
-    (buildNode 100 50 default-settings true false false false)
-    (buildNode 50 370 default-settings false false false false)
-    (buildNode 179 270 default-settings false false false false)
-    (buildNode 122 701 default-settings true false false false)
-    (buildNode 187 222 default-settings false false false false)
-    (buildNode 200 200 default-settings false false false false)
-    (buildNode 75 125 default-settings true false false false))
-   path-settings true [] true 0.45 10 true))
-
-(defn createCirclePath
-  [x1 y1 x2 y2 x3 y3 x4 y4]
-  (buildPath
-   (vector
-    (buildNode x1 y1 default-settings true true false false)
-    (buildNode (+ x1 (/ (- x2 x1) 2)) (+ y1 (/ (- y2 y1) 2)) default-settings false false false false)
-    (buildNode x2 y2 default-settings false false false false)
-    (buildNode (+ x1 (/ (- x2 x1) 2)) (+ y2 (/ (- y3 y2) 2)) default-settings false false false false)
-    (buildNode x3 y3 default-settings false false false false)
-    (buildNode (+ x4 (/ (- x2 x4) 2)) (+ y2 (/ (- y3 y2) 2)) default-settings false false false false)
-    (buildNode x4 y4 default-settings false false false false)
-    (buildNode (+ x4 (/ (- x2 x4) 2)) (+ y1 (/ (- y2 y1) 2)) default-settings true true false false))
-   path-settings false [] true 0.45 10 false))
+;; (defn addLinePath
+;;   [pos1 pos2]
+;;   (buildPath (createLine pos1 pos2) path-settings false [] true 0.45 10 false))
 
 
-(defn createTriangle-2
-  [w h]
-  (buildPath
-   (vector
-    (buildNode 100 100 default-settings false false false false)
-    (buildNode 250 250 default-settings false false false false)
-    (buildNode 50 250 default-settings false false false false))
-   path-settings true [] true 0.45 10 false))
+;; (defn createTriangle
+;;   [x1 y1 x2 y2 x3 y3]
+;;   (buildPath
+;;    (vector
+;;     (buildNode x2 y2 default-settings false false false false)
+;;     (buildNode x3 y3 default-settings true true false false))
+;;    path-settings false [] true 0.45 10 false))
 
-(defn angleTestCase
-  []
-  (vector
-   (buildNode 200 700 default-settings true true false false)
-   (buildNode 500 700 default-settings false false false false)
-   (buildNode 350 200 default-settings true true false false)))
+;; (defn createPathWithFixedNodes
+;;   []
+;;   (buildPath
+;;    (vector
+;;     (buildNode 50 50 default-settings true false false false)
+;;     (buildNode 150 70 default-settings false false false false)
+;;     (buildNode 120 70 default-settings false false false false)
+;;     (buildNode 150 900 default-settings false false false false)
+;;     (buildNode 10 70 default-settings false false false false)
+;;     (buildNode 30 40 default-settings false false false false)
+;;     (buildNode 150 70 default-settings false false false false)
+;;     (buildNode 100 50 default-settings true false false false)
+;;     (buildNode 50 370 default-settings false false false false)
+;;     (buildNode 179 270 default-settings false false false false)
+;;     (buildNode 122 701 default-settings true false false false)
+;;     (buildNode 187 222 default-settings false false false false)
+;;     (buildNode 200 200 default-settings false false false false)
+;;     (buildNode 75 125 default-settings true false false false))
+;;    path-settings true [] true 0.45 10 true))
 
-(defn createAngleTestCase
-  "creates a node list containg 2 nodes"
-  []
-  (buildPath (angleTestCase) default-settings false [] true 0.45 10 false))
+;; (defn createCirclePath
+;;   [x1 y1 x2 y2 x3 y3 x4 y4]
+;;   (buildPath
+;;    (vector
+;;     (buildNode x1 y1 default-settings true true false false)
+;;     (buildNode (+ x1 (/ (- x2 x1) 2)) (+ y1 (/ (- y2 y1) 2)) default-settings false false false false)
+;;     (buildNode x2 y2 default-settings false false false false)
+;;     (buildNode (+ x1 (/ (- x2 x1) 2)) (+ y2 (/ (- y3 y2) 2)) default-settings false false false false)
+;;     (buildNode x3 y3 default-settings false false false false)
+;;     (buildNode (+ x4 (/ (- x2 x4) 2)) (+ y2 (/ (- y3 y2) 2)) default-settings false false false false)
+;;     (buildNode x4 y4 default-settings false false false false)
+;;     (buildNode (+ x4 (/ (- x2 x4) 2)) (+ y1 (/ (- y2 y1) 2)) default-settings true true false false))
+;;    path-settings false [] true 0.45 10 false))
+
+
+;; (defn createTriangle-2
+;;   [w h]
+;;   (buildPath
+;;    (vector
+;;     (buildNode 100 100 default-settings false false false false)
+;;     (buildNode 250 250 default-settings false false false false)
+;;     (buildNode 50 250 default-settings false false false false))
+;;    path-settings true [] true 0.45 10 false))
+
+;; (defn angleTestCase
+;;   []
+;;   (vector
+;;    (buildNode 200 700 default-settings true true false false)
+;;    (buildNode 500 700 default-settings false false false false)
+;;    (buildNode 350 200 default-settings true true false false)))
+
+;; (defn createAngleTestCase
+;;   "creates a node list containg 2 nodes"
+;;   []
+;;   (buildPath (angleTestCase) default-settings false [] true 0.45 10 false))
 
 (defn update-map-entries [m e]
   (reduce #(update-in %1 [(first %2)] (fn [_] (last %2))) m e))
@@ -539,7 +539,7 @@
 
        (swap! new-paths assoc-in [path-index] (pruneNodes (get @new-paths path-index)))
 
-       (swap! new-paths assoc-in [path-index :nodes] (removeFixed (:nodes (get @new-paths path-index))))
+       (swap! new-paths assoc-in [path-index :nodes] (path/removeFixed (:nodes (get @new-paths path-index))))
 
        (when (> (rand-int 100) 50)
          (swap! new-paths assoc-in [path-index] (injectRandomNodeByCurvature (get @new-paths path-index))))
@@ -554,13 +554,13 @@
 
     @new-paths))
 
-(defn init-growth ;;call it seed?
-  "initializes growth"
-  [w h] 
-  (let [p-1 [(createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
-        p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
-        p-3 [(createCirclePath 150 100 200 150 150 200 100 150)]
-        p-4 [(addLinePath [0 0] [w h])]
-        paths (applyGrowth p-4 w h)]
-    paths))
+;; (defn init-growth ;;call it seed?
+;;   "initializes growth"
+;;   [w h] 
+;;   (let [p-1 [(createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
+;;         p-2 [(addLinePath [0 (/ h 2)] [w (/ h 2)])]
+;;         p-3 [(createCirclePath 150 100 200 150 150 200 100 150)]
+;;         p-4 [(addLinePath [0 0] [w h])]
+;;         paths (applyGrowth p-4 w h)]
+;;     paths))
 

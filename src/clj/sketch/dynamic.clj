@@ -49,8 +49,10 @@
   (if (= @counter 0)
     (do
 
-      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
-      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 5)))
+      ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
+      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 2)))
+      ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 200)} {:x window-width :y (- window-height 200)} 2)))
+      ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 100)} {:x window-width :y (- window-height 100)} 2)))
       ;; (println (:paths @canvas))
       (doseq [path (:paths @canvas)
               :let [nodes (:nodes path)]]
@@ -82,8 +84,6 @@
   ;; (Thread/sleep 100)
   )
  
-
-
 
 
 
