@@ -115,3 +115,8 @@
         p (- (* 2 dy) dx)]
     (println x1 y1 x2 y2 dx dy p)
     (retrieveLinePixels x1 y1 x2 y2 dx dy p [])))
+
+(defn euclidean-distance
+  [vec1 vec2]
+  (Math/sqrt
+   (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
