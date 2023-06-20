@@ -22,8 +22,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 500)
-(def window-height 600)
+(def window-width 1100)
+(def window-height 800)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
@@ -39,8 +39,11 @@
   (background 0 0 0)
   (reset! canvas {:paths []})
   (reset! counter 0)
-  (reset! tree/counter 0) 
+  (reset! tree/counter 0)
+  (reset! tree/i 0)
   (reset! node-count 0)
+  (reset! path/nodeIDCounter 0)
+  (reset! path/pathIDCounter 0)
   ;; (no-loop)
   )
 
@@ -50,7 +53,8 @@
     (do
 
       ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
-      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 2)))
+      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 50)} {:x window-width :y (- window-height 50)} 15)))
+      (swap! canvas assoc-in [:paths 0] (tree/branch (get (:paths @canvas) 0) true))
       ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 200)} {:x window-width :y (- window-height 200)} 2)))
       ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 100)} {:x window-width :y (- window-height 100)} 2)))
       ;; (println (:paths @canvas))
