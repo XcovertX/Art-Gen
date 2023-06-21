@@ -34,6 +34,10 @@
           (stroke (get node-color node-index) 360 360))
         (when (:draw-nodes (:settings path))
           (ellipse x y 2 2))
+        (when (:is-trunk (:data node)) ;; hard coded for debugging
+          (stroke 255 0 255)
+          (ellipse x y 2 2)
+          (stroke (get node-color node-index) 360 360))
         (when (:draw-fixed-nodes (:settings path))
           (when (:is-fixed (:data node))
             (stroke 255 0 255)

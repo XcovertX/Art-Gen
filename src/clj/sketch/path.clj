@@ -248,6 +248,11 @@
    []
    (range (count paths))))
 
+(defn splitHorizontalDistance
+  "splits a given length into a vec of smaller lengths"
+  [length count]
+  (vec (distinct (sort (vec (take count (repeatedly #(rand-int length))))))))
+
 (defn moveNodeXPositionRight
   "adjust's the given node's X position right by the given distance"
   [node distance]

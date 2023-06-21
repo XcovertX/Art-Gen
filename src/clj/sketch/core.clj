@@ -1,6 +1,7 @@
 (ns sketch.core
   (:require [quil.core :as q])
   (:require [sketch.dynamic :as dynamic])
+  (:require [sketch.user-interface :as ui])
   (:gen-class))
 
 
