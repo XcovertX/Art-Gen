@@ -34,6 +34,8 @@
   (hash-map
    :age 0
    :growth-iteration-count 0
+   :trunk-growth-rate 20
+   :trunk-growth-amount 2
    :parent-node-id nil
    :min-distance 0
    :max-distance 4.5
@@ -61,6 +63,7 @@
    :is-random false
    :to-remove false
    :is-bottom false
+   :is-trunk false
    :is-hardend false))
 
 (def default-tree-node-settings
@@ -97,7 +100,9 @@
    (path/getPosition position) 
    default-tree-node-settings
    (assoc default-tree-node-data
+          :delay-growth-by (:delay-growth-by (:data node))
           :is-bottom true
+          :is-trunk true
           :side side
           :is-fixed fixed
           :distance-from-top (inc (:distance-from-top (:data node))))))
@@ -113,18 +118,33 @@
           :is-fixed fixed
           :distance-from-top (inc (:distance-from-top (:data node))))))
 
+(defn buildTrunkNode
+  "returns a node that is vertically above base bottom node"
+  [node position side fixed]
+  (path/buildNode
+   (path/getPosition position)
+   default-tree-node-settings
+   (assoc default-tree-node-data
+          :delay-growth-by (:delay-growth-by (:data node))
+          :is-trunk true
+          :side side
+          :is-fixed fixed
+          :distance-from-top (inc (:distance-from-top (:data node))))))
+
 (declare branch)
 
 (defn injectSeedsOnOnePath
-  "adds a given count of nodes randomly dispersed to a single path"
-  [path seed-count]
+  "adds a given count of nodes randomly dispersed to a single path then forces first branch iteration"
+  [path data]
   (let [new-path (atom path)
         nodes (:nodes path)
         first-node (get nodes 0)
-        length (count nodes) ;
+        length (count nodes)
         last-node (get nodes (- length 1))
         distance (path/getDistance first-node last-node)
-        seeds (vec (distinct (sort (vec (take seed-count (repeatedly #(rand-int distance))))))) ;; themp hard code
+        seeds (if (:is-random? data)
+                (path/splitHorizontalDistance distance (:seed-count data))
+                (:seeds data))
         ;; seeds [100 210]
         settings (if (:uniform-node-settings? (:settings path))
                    (:settings path)
@@ -143,27 +163,33 @@
                                   :branch-angle 0
                                   :it-tip true
                                   :is-branch-ready true
-                                  :branch-rate 50
+                                  :branch-rate (:branch-rate data)
                                   :side "top"
-                                  :delay-growth-by (rand-int 150) ;; temp hard code
-                                  ;; :delay-growth-by 0
+                                  :delay-growth-by (if (:is-random? data)
+                                                     (rand-int (:growth-delay data))
+                                                     (:growth-delay data))
                                   :parent-node-id 0)]
           (swap! new-path assoc-in [:nodes] (path/insert (:nodes @new-path) node-index new-node)))))
-    @new-path))
+    (branch @new-path true)))
 
 (defn seed-tree
   "creates a tree path comprised of a line and seeds it with a given number of nodes"
-  [pos1 pos2 seed-count]
+  [pos1 pos2 data]
   (let [path (path/createLinePath pos1 pos2)
         tree-path (update-in path [:data] assoc :type "tree")
         tree-path (update-in tree-path [:nodes 0] assoc :is-branch-ready true)
         tree-path (update-in tree-path [:nodes 1] assoc :is-branch-ready true)]
-    (injectSeedsOnOnePath tree-path seed-count)))
+    (injectSeedsOnOnePath tree-path data)))
 
 (defn makeBranchReady
   "this marks a node as 'ready to branch'"
   [node]
   (update-in node [:data] assoc :is-branch-ready true))
+
+(defn makeTrunkReady
+  "this marks a node as 'ready to branch'"
+  [node]
+  (update-in node [:data] assoc :is-trunk-ready true))  
 
 (defn makeBranchUnready
   "this marks a node as not 'ready to branch'"
@@ -174,6 +200,12 @@
   "checks if node has been marked ready to branch"
   [node]
   (:is-branch-ready (:data node)))
+
+(defn trunkReady?
+  "checks if node has been marked ready to branch"
+  [node]
+  (> (:growth-iteration-count (:data node))
+     (:trunk-growth-rate (:data node))))
 
 (defn minimumGrowthAchieved?
   "checks if growth-iteration-count has exceeded branch-height-minimum"
@@ -218,6 +250,11 @@
   "checks if given node is on the bottom if the tree"
   [node]
   (:is-bottom (:data node)))
+
+(defn isTrunk?
+  "checks if given node is a part of the trunk of the tree"
+  [node]
+  (:is-trunk (:data node)))
 
 (defn isRightSide?
   "checks if given node is ont the right side of the tree"
@@ -329,12 +366,12 @@
 (defn nodesOverlapX?
   "checks if the given left and right nodes have overlapping x-coords"
   [left-node right-node]
-  (< (:x (:position right-node)) (:x (:position left-node))))
+  (<= (:x (:position right-node)) (:x (:position left-node))))
 
 (defn nodesOverlapY?
   "checks if the given left and right nodes have overlapping x-coords"
   [left-node right-node]
-  (< (:y (:position right-node)) (:y(:position left-node))))
+  (< (:y (:position right-node)) (:y (:position left-node)))) 
 
 (defn getNonOverlappinNodes
   "returns a vec of nonoverlapping nodes representing the valley between tree top to tree top"
@@ -349,9 +386,11 @@
                                          (mapv (fn [a]
                                                  (mapv (fn [b]
                                                          (when (nodesOverlapX? a b)
-                                                          (if (nodesOverlapY? a b)
-                                                            [a]
-                                                            [b]))) nodes-b)) nodes-a)))))))) combined-nodes)))
+                                                           (if (nodesOverlapY? a b)
+                                                             [a]
+                                                             [b]))) nodes-b)) nodes-a)))))))) combined-nodes)))
+
+
 
 (defn removeOverLappingTreeNodes
   "removes the sections of the path that overlap"
@@ -362,44 +401,25 @@
         fst 0
         lst (count top-node-positions)]
     (swap! new-path assoc-in [:nodes] [])
-    (doseq [index (range (+ (count top-node-positions) 1))] ;; this need to be a count of spans between tops, not tops
-      (println "alltnp" (map (fn [x] (first x)) top-node-positions))
-      (println "idx" index)
-      (println "cnt" (count top-node-positions))
-      (println "RNG" (range (+ (count top-node-positions) 1)))
+    (doseq [index (range (+ (count top-node-positions) 1))]
       (if (= index fst)
-        (do
-          (println "fst")
-            ;; (println [(first nodes)])
-            ;; (println (map (fn [x] (first x)) top-node-positions))
-            ;; (println (first (get top-node-positions index)))
+        (swap! new-path assoc-in [:nodes]
+               (into []
+                     (concat (:nodes @new-path)
+                             (getNonOverlappinNodes
+                              [(first nodes)]
+                              (subvec nodes 0 (first (get top-node-positions index)))))))
+        (if (= index lst)
           (swap! new-path assoc-in [:nodes]
                  (into []
                        (concat (:nodes @new-path)
                                (getNonOverlappinNodes
-                                [(first nodes)]
-                                (subvec nodes 0 (first (get top-node-positions index))))))))
-        (if (= index lst)
-          (do
-            (println "lst")
-            (swap! new-path assoc-in [:nodes]
-                   (into []
-                         (concat (:nodes @new-path)
-                                 (getNonOverlappinNodes
-                                  (subvec nodes (first (get top-node-positions (- index 1))))
-                                  [(last nodes)])))))
+                                (subvec nodes (first (get top-node-positions (- index 1))))
+                                [(last nodes)]))))
           (let [top-node-a (first (get top-node-positions (- index 1)))
                 top-node-b (first (get top-node-positions index))
                 bottom-node-a (getNextRightBottomNodeIndex nodes top-node-a top-node-b)
                 bottom-node-b (getNextLeftBottomNodeIndex nodes top-node-a top-node-b)]
-            (println "default")
-            (println "tnpa" top-node-a)
-            (println "tnpb" top-node-b)
-            (println "botna" bottom-node-a)
-            (println "botnb" bottom-node-b)
-            (println "subvec1" (map (fn [x] [(:x (:position x)) (:y (:position x)) (:is-bottom (:data x))]) (subvec nodes top-node-a top-node-b))) 
-            (println "subvec2")
-          ;; (println (getNextLeftBottomNodeIndex (subvec nodes (first (get top-node-positions (- index 1))))))
             (swap! new-path assoc-in [:nodes]
                    (into []
                          (concat (:nodes @new-path)
@@ -448,27 +468,41 @@
                     updated-node (incBranchCount updated-node)]
 
                 (when (or (isLeftSide? node) (isTop? node))
-                  (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) left-node)))
+                  (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) left-node))
+                  (when first-branch
+                    (swap! new-path assoc-in [:nodes]
+                           (conj (:nodes @new-path)
+                                 (buildTrunkNode node {:x new-right-x :y new-right-y} "left" false))))) 
                 (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node))
                 (when (or (isRightSide? node) (isTop? node))
+                  (when first-branch
+                    (swap! new-path assoc-in [:nodes]
+                           (conj (:nodes @new-path)
+                                 (buildTrunkNode node {:x new-right-x :y new-right-y} "right" false))))
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) right-node))))
               (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node)))
             (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node)))
           (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node)))))
     @new-path))
 
+(defn growTrunk
+  "expands the width of the trunk and adds height to every node in the tree"
+  [path top-trunk-node]
+  ((for [x (:nodes path)] (:nodes path))))
+
 (defn grow
   "causes each tree branch to grow"
   [path top-rate side-rate]
-  (let [new-path (atom (path/incPathAge path))] 
+  (let [new-path (atom path)] 
     (swap! new-path assoc-in [:nodes] [])
     (doseq [node-index (range (count (:nodes path)))] 
       (let [node (get (:nodes path) node-index)]
-        (if (not (isFixed? node))
+        (if (and (not (isFixed? node))
+                 (growthDelayComplete? node))
           (do
             (when (isTop? node)
-              (if (and (not (branchReady? node))
-                       (growthDelayComplete? node))
+
+              (if (not (branchReady? node))
                 (let [updated-node (path/moveNodeYPositionUp node top-rate)
                       updated-node (grow/incGrowthCount updated-node)
                       updated-node (path/incNodeAge updated-node)
@@ -481,10 +515,20 @@
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))))
 
             (when (isLeftSide? node)
-              (if (isBottom? node)
+              (if (isTrunk? node)
                 (let [updated-node (grow/incGrowthCount node)
                       updated-node (path/incNodeAge updated-node)
-                      updated-node (path/moveNodeXPositionLeft (grow/resetGrowthCount updated-node) (/ side-rate 10))]
+                      updated-node (if (trunkReady? updated-node)
+                                     (let [updated-node (makeTrunkReady updated-node)
+                                           updated-node (path/moveNodeXPositionLeft updated-node
+                                                                                    (:trunk-growth-amount (:data updated-node)))
+                                           updated-node (if (not (:is-bottom (:data updated-node)))
+                                                          (path/moveNodeYPositionUp updated-node
+                                                                                    (* (:trunk-growth-amount (:data updated-node)) 3))
+                                                          updated-node)
+                                           updated-node (grow/resetGrowthCount updated-node)]
+                                       (path/moveNodeXPositionLeft updated-node (/ (:trunk-growth-amount (:data updated-node)) 10)))
+                                     updated-node)]
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))
                 (if (not (branchReady? node))
                   (let [updated-node (if (matured? node)
@@ -510,10 +554,20 @@
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node)))))
 
             (when (isRightSide? node)
-              (if (isBottom? node)
+              (if (isTrunk? node)
                 (let [updated-node (grow/incGrowthCount node)
                       updated-node (path/incNodeAge updated-node)
-                      updated-node (path/moveNodeXPositionRight (grow/resetGrowthCount updated-node) (/ side-rate 10))]
+                      updated-node (if (trunkReady? updated-node)
+                                     (let [updated-node (makeTrunkReady updated-node)
+                                           updated-node (path/moveNodeXPositionRight updated-node
+                                                                                     (:trunk-growth-amount (:data updated-node)))
+                                           updated-node (if (not (:is-bottom (:data updated-node)))
+                                                          (path/moveNodeYPositionUp updated-node
+                                                                                    (* (:trunk-growth-amount (:data updated-node)) 3))
+                                                          updated-node)
+                                           updated-node (grow/resetGrowthCount updated-node)]
+                                       (path/moveNodeXPositionRight updated-node (/ (:trunk-growth-amount (:data updated-node)) 10)))
+                                     updated-node)]
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))
                 (if (not (branchReady? node))
                   (let [updated-node (if (matured? node)
@@ -537,28 +591,25 @@
                                        updated-node)]
                     (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node)))
                   (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node))))))
-          (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) node)))))
-    @new-path))
+          (let [updated-node (path/incNodeAge node)]
+            (swap! new-path assoc-in [:nodes] (conj (:nodes @new-path) updated-node))))))
+    @new-path)) 
 
 
 ;; --------- Primary Growth Iterator Functions ---------------
 (def i (atom 0))
 (defn applyTreeGrowth
-  [paths width height]
-  
-  (let [new-paths (atom paths)]
-    
-    (doseq [path-index (range (count @new-paths))]
+  [path width height]
+  (let [new-path (atom {:p (path/incPathAge path)})]
 
-      (swap! new-paths assoc-in [path-index] (branch (get @new-paths path-index) false))
+    (swap! new-path assoc-in [:p] (branch (:p @new-path) false))
 
-      (swap! new-paths assoc-in [path-index] (grow (get @new-paths path-index) 4 3))
-
-      (when (and (= @i 0)
-                 (> (:age (:data (get @new-paths path-index))) 400))
-        (swap! new-paths assoc-in [path-index] (removeOverLappingTreeNodes (get @new-paths path-index)))
-        (swap! new-paths assoc-in [path-index] (path/setAllNodesToFixed (get @new-paths path-index)))
-        (swap! i inc))
-      (swap! new-paths assoc-in [path-index] (path/incPathAge (get @new-paths path-index))))
-    
-    @new-paths))
+    (swap! new-path assoc-in [:p] (grow (:p @new-path) 4 3))
+    (when (and (= @i 0)
+               (> (:age (:data (:p @new-path))) 200))
+      (swap! new-path assoc-in [:p] (removeOverLappingTreeNodes (:p @new-path)))
+      (swap! new-path assoc-in [:p] (path/setAllNodesToFixed (:p @new-path)))
+      (println "nodes: " (map (fn [x] (:age (:data x))) (:nodes (:p @new-path))))
+      (println "nodes set to fixed")
+      (swap! i inc)) 
+    (:p @new-path)))
