@@ -22,8 +22,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1700)
-(def window-height 800)
+(def window-width 700)
+(def window-height 700)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
@@ -54,7 +54,7 @@
   (if (= @counter 0)
     (do
 
-      ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
+      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
       (swap! canvas assoc-in [:paths]
              (conj (:paths @canvas) (tree/seed-tree
                                      {:x 0 :y (- window-height 50)}
@@ -83,7 +83,7 @@
 
         (when (= (:type (:data (get (:paths @canvas) path-index))) "shape")
           (swap! canvas assoc-in [:paths path-index]
-                 (if (> (:age (:data (get (:paths @canvas) path-index))) 200)
+                 (if (> (:age (:data (get (:paths @canvas) path-index))) 230)
                    (path/setAllNodesToFixed (get (:paths @canvas) path-index))
                    (path/incPathAge (shape/adjustRectangle
                                      (get (:paths @canvas) path-index)
