@@ -122,8 +122,3 @@
   [vec1 vec2]
   (Math/sqrt
    (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
-
-(defn getCoordinates
-  "returns a map of x y coordinates from a given radius and interval"
-  [radius] [interval]
-  )

@@ -72,9 +72,11 @@
           (swap! canvas assoc-in [:paths path-index] (tree/applyTreeGrowth (get (:paths @canvas) path-index) window-width window-height))
 
           (when (not @tree/trees)
-              (swap! canvas assoc-in [:lines] (path/convertPathToLines (get (:paths @canvas) path-index)))))
+              (swap! canvas assoc-in [:lines] (path/convertPathToLines (get (:paths @canvas) path-index)
+                                                                       0 window-width
+                                                                       0 window-height))))
 
-        (let [rays (rt/getRays {:x (mouse-x) :y (mouse-y)} 150 3000 (:lines @canvas))]
+        (let [rays (rt/getRays {:x (mouse-x) :y (mouse-y)} 150 2000 (:lines @canvas))]
           (doseq [r (range (count rays))]
             (line
              (mouse-x)

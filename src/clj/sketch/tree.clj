@@ -356,13 +356,13 @@
 (defn getRightNodesInTree
   "returns a vec of all right side nodes, in order from bottom node to the top node"
   [nodes top-node-index]
-  (let [bottom-node-index (getNextRightBottomNodeIndex (subvec nodes top-node-index))]
+  (let [bottom-node-index (getNextRightBottomNodeIndex (subvec nodes top-node-index) () ())]
    (subvec nodes (- top-node-index 1) bottom-node-index)))
 
 (defn getLeftNodesInTree
   "returns a vec of all left side nodes, in order from bottom node to the top node"
   [nodes top-node-index]
-  (let [bottom-node-index (getNextLeftBottomNodeIndex (subvec nodes 0 (+ top-node-index 1)))]
+  (let [bottom-node-index (getNextLeftBottomNodeIndex (subvec nodes 0 (+ top-node-index 1))()())]
     (subvec nodes (- bottom-node-index 1) top-node-index)))
 
 (defn nodesOverlapX?

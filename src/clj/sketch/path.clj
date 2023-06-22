@@ -359,11 +359,15 @@
 
 (defn convertPathToLines
   "takes a given path and returns a vector of lines representing each node plus the node that follows it on the path"
-  [path]
+  [path min-width max-width min-height max-height]
   (println "converting path to lines")
   (filterv (fn [x] (not (nil? x)))
    (for [node-index (range (count (:nodes path)))]
      (when (not= node-index (- (count (:nodes path)) 1))
        (let [point-a (:position (get (:nodes path) node-index))
              point-b (:position (get (:nodes path) (+ node-index 1)))]
-         {:point-a point-a :point-b point-b})))))
+         (when (and (>= (:x point-a) min-width)
+                    (<= (:x point-a) max-width)
+                    (>= (:y point-a) min-height)
+                    (<= (:y point-a) max-height))
+           {:point-a point-a :point-b point-b}))))))

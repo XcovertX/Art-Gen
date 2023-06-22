@@ -21,7 +21,7 @@
                           (:y s1))
                        (* (:x s1)
                           (:y s2))) 0)
-               (1/1000)
+               (/ 1 1000)
                (+ (* (- (:x s2))
                      (:y s1))
                   (* (:x s1)
@@ -34,7 +34,7 @@
                           (:y s1))
                        (* (:x s1)
                           (:y s2))) 0)
-               (1/1000)
+               (/ 1 1000)
                (+ (* (- (:x s2))
                      (:y s1))
                   (* (:x s1)
@@ -78,19 +78,20 @@
   [point-a resolution max-distance l]
   (vec 
    (flatten
-    (for [i (range resolution)]
-      (let [lines l
-            direction (* TAU (/ i resolution))
-            point-b {:x (+ (:x point-a) (* (Math/cos direction) max-distance))
-                     :y (+ (:y point-a) (* (Math/sin direction) max-distance))}
-            min-distance (first
-                          (sort
-                           (for [line lines]
-                             (let [distance (getRayCast point-a point-b (:point-a line) (:point-b line))
-                                   min-distance (if (and (< distance max-distance)
-                                                         (> distance 0))
-                                                  distance
-                                                  max-distance)]
-                               min-distance))))]
-        {:point-a point-a :point-b {:x (+ (:x point-a) (* (Math/cos direction) min-distance))
-                                    :y (+ (:y point-a) (* (Math/sin direction) min-distance))}})))))
+    (filterv (fn [x] (not (nil? x)))
+             (for [i (range resolution)]
+               (let [lines l
+                     direction (* TAU (/ i resolution))
+                     point-b {:x (+ (:x point-a) (* (Math/cos direction) max-distance))
+                              :y (+ (:y point-a) (* (Math/sin direction) max-distance))}
+                     min-distance (first
+                                   (sort
+                                    (for [line lines]
+                                      (let [distance (getRayCast point-a point-b (:point-a line) (:point-b line))
+                                            min-distance (if (and (< distance max-distance)
+                                                                  (> distance 0))
+                                                           distance
+                                                           max-distance)]
+                                        min-distance))))]
+                 {:point-a point-a :point-b {:x (+ (:x point-a) (* (Math/cos direction) min-distance))
+                                             :y (+ (:y point-a) (* (Math/sin direction) min-distance))}}))))))
