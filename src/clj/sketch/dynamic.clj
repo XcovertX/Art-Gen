@@ -23,7 +23,7 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 700)
+(def window-width 1100)
 (def window-height 700)
 
 (def img-url "source_images/eye.jpg")
@@ -39,8 +39,9 @@
   (stroke-weight 2)
   (background 0 0 0)
   (fill 255)
-  (reset! canvas {:paths []})
+  (reset! canvas {:paths [] :lines []})
   (reset! counter 0)
+  (reset! tree/trees true)
   (reset! tree/counter 0)
   (reset! tree/i 0)
   (reset! node-count 0)
@@ -51,17 +52,38 @@
 
 (defn draw []
   (background 0 0 0)
-  (fill 255)
-  ;; (ellipse (/ window-width 2) 200 50 50)
-  (let [rays (rt/getRays {:x (mouse-x) :y (mouse-y)} 360 3000)]
-    (doseq [r (range (count rays))] 
-      (line
-       (mouse-x)
-       (mouse-y)
-       (:x (:point-b (get rays r)))
-       (:y (:point-b (get rays r)))))
-    ) 
-  )
+
+  (if (and (= @counter 0)
+           @tree/trees)
+    (swap! canvas assoc-in [:paths]
+           (conj (:paths @canvas) (tree/seed-tree
+                                   {:x 0 :y (+ window-height 150)}
+                                   {:x window-width :y (+ window-height 150)}
+                                   {:is-random? true
+                                    :growth-delay (rand-int 200)
+                                    :seed-count 2
+                                    :branch-rate 50
+                                    :seeds [100 200 300]})))
+    (doseq [path-index (range (count (:paths @canvas)))]
+
+      (if @tree/trees
+        (when (= (:type (:data (get (:paths @canvas) path-index))) "tree")
+
+          (swap! canvas assoc-in [:paths path-index] (tree/applyTreeGrowth (get (:paths @canvas) path-index) window-width window-height))
+
+          (when (not @tree/trees)
+              (swap! canvas assoc-in [:lines] (path/convertPathToLines (get (:paths @canvas) path-index)))))
+
+        (let [rays (rt/getRays {:x (mouse-x) :y (mouse-y)} 150 3000 (:lines @canvas))]
+          (doseq [r (range (count rays))]
+            (line
+             (mouse-x)
+             (mouse-y)
+             (:x (:point-b (get rays r)))
+             (:y (:point-b (get rays r)))))))
+      (draw/drawPath (get (:paths @canvas) path-index))))
+  (swap! counter inc))
+
 
 
 

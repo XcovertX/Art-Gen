@@ -2,13 +2,13 @@
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
             [sketch.calculations :as calc])
-(:use [incanter.core :only [$=]])
-(:use [clojure.math.combinatorics :only [combinations cartesian-product]])
-(:use [clojure.pprint])
-(:use [clojure.set :only [union]])
-(:use [clojure.contrib.map-utils :only [deep-merge-with]])
-(:import [org.apache.commons.math3.distribution ParetoDistribution])
-(:import [processing.core PShape PGraphics]))
+  (:use [incanter.core :only [$=]])
+  (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
+  (:use [clojure.pprint])
+  (:use [clojure.set :only [union]])
+  (:use [clojure.contrib.map-utils :only [deep-merge-with]])
+  (:import [org.apache.commons.math3.distribution ParetoDistribution])
+  (:import [processing.core PShape PGraphics]))
 
 ;; A namespace for all compatible data structures
 ;; Currently not used and exists as a start to reorganizing the app
@@ -71,7 +71,7 @@
 
 (def default-path-settings
   "Settings to be included with a path not provided with any"
-  (hash-map 
+  (hash-map
    :is-closed false
    :fill-color nil
    :stroke-color nil
@@ -278,8 +278,8 @@
   [node-A node-B settings is-random is-fixed]
   (let [new-x (/ (+ (:x (:position node-A)) (:x (:position node-B))) 2)
         new-y (/ (+ (:y (:position node-A)) (:y (:position node-B))) 2)]
-    (buildNode {:x new-x :y new-y} settings 
-               (assoc default-node-data 
+    (buildNode {:x new-x :y new-y} settings
+               (assoc default-node-data
                       :is-fixed is-fixed
                       :is-random is-random))))
 
@@ -356,3 +356,14 @@
          (conj new-nodes (update-in node [:data] assoc :is-fixed true))))
      []
      nodes)))
+
+(defn convertPathToLines
+  "takes a given path and returns a vector of lines representing each node plus the node that follows it on the path"
+  [path]
+  (println "converting path to lines")
+  (filterv (fn [x] (not (nil? x)))
+   (for [node-index (range (count (:nodes path)))]
+     (when (not= node-index (- (count (:nodes path)) 1))
+       (let [point-a (:position (get (:nodes path) node-index))
+             point-b (:position (get (:nodes path) (+ node-index 1)))]
+         {:point-a point-a :point-b point-b})))))

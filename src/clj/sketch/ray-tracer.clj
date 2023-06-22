@@ -12,24 +12,33 @@
   (let [s1 {:x (- (:x point-b) (:x point-a))
             :y (- (:y point-b) (:y point-a))}
         s2 {:x (- (:x point-d) (:x point-c))
-            :y (- (:y point-d) (:y point-c))}]
-    ;; (println s1 s2)
-(let        [s (/ (+ (* (- (:y s1))
+            :y (- (:y point-d) (:y point-c))}
+       s (/ (+ (* (- (:y s1))
                    (- (:x point-a) (:x point-c)))
                 (* (:x s1)
                    (- (:y point-a) (:y point-c))))
-             (+ (* (- (:x s2))
-                   (:y s1))
-                (* (:x s1)
-                   (:y s2))))
+             (if (= (+ (* (- (:x s2))
+                          (:y s1))
+                       (* (:x s1)
+                          (:y s2))) 0)
+               (1/1000)
+               (+ (* (- (:x s2))
+                     (:y s1))
+                  (* (:x s1)
+                     (:y s2)))))
         t (/ (- (* (:x s2)
                    (- (:y point-a) (:y point-c)))
                 (* (:y s2)
                    (- (:x point-a) (:x point-c))))
-             (+ (* (- (:x s2))
-                   (:y s1))
-                (* (:x s1)
-                   (:y s2))))]
+             (if (= (+ (* (- (:x s2))
+                          (:y s1))
+                       (* (:x s1)
+                          (:y s2))) 0)
+               (1/1000)
+               (+ (* (- (:x s2))
+                     (:y s1))
+                  (* (:x s1)
+                     (:y s2)))))]
     (if (and (>= s 0)
              (<= s 1)
              (>= t 0)
@@ -38,7 +47,7 @@
             y (+ (:y point-a) (* t (:y s1)))] 
         (dist (:x point-a) (:y point-a) x y))
       -1)
-    )))
+    ))
 
 (defn trace
   "Draw a line from x1,y1 to x2,y2 using Bresenham's, to a java BufferedImage in the colour of pixel."
@@ -66,14 +75,11 @@
 
 (defn getRays
   "returns a map of rays from a given radius and resolution (ray count)"
-  [point-a resolution max-distance]
+  [point-a resolution max-distance l]
   (vec 
    (flatten
     (for [i (range resolution)]
-      (let [lines [{:point-a {:x 50 :y 150} :point-b {:x 200 :y 400}}
-                   {:point-a {:x 150 :y 150} :point-b {:x 100 :y 100}}
-                   {:point-a {:x 50 :y 450} :point-b {:x 300 :y 453}}
-                   {:point-a {:x 50 :y 350} :point-b {:x 400 :y 400}}]
+      (let [lines l
             direction (* TAU (/ i resolution))
             point-b {:x (+ (:x point-a) (* (Math/cos direction) max-distance))
                      :y (+ (:y point-a) (* (Math/sin direction) max-distance))}
