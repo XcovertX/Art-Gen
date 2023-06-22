@@ -14,6 +14,8 @@
 
 ;; ------ Definitions ----------------
 
+(def trees (atom true))
+
 (def default-tree-path-data
   (hash-map
    :type "tree"
@@ -608,8 +610,8 @@
     (when (and (= @i 0)
                (> (:age (:data (:p @new-path))) 200))
       (swap! new-path assoc-in [:p] (removeOverLappingTreeNodes (:p @new-path)))
-      (swap! new-path assoc-in [:p] (path/setAllNodesToFixed (:p @new-path)))
-      (println "nodes: " (map (fn [x] (:age (:data x))) (:nodes (:p @new-path))))
+      (swap! new-path assoc-in [:p] (path/setAllNodesToFixed (:p @new-path))) 
       (println "nodes set to fixed")
-      (swap! i inc)) 
+      (swap! i inc)
+      (reset! trees false)) 
     (:p @new-path)))

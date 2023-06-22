@@ -11,7 +11,8 @@
             [sketch.tree :as tree]
             [sketch.shapes :as shape]
             [sketch.draw :as draw]
-            [sketch.path :as path])
+            [sketch.path :as path]
+            [sketch.ray-tracer :as rt])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -22,7 +23,7 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 700)
+(def window-width 1100)
 (def window-height 700)
 
 (def img-url "source_images/eye.jpg")
@@ -38,8 +39,9 @@
   (stroke-weight 2)
   (background 0 0 0)
   (fill 255)
-  (reset! canvas {:paths []})
+  (reset! canvas {:paths [] :lines []})
   (reset! counter 0)
+  (reset! tree/trees true)
   (reset! tree/counter 0)
   (reset! tree/i 0)
   (reset! node-count 0)
@@ -49,56 +51,93 @@
   )
 
 (defn draw []
-
   (background 0 0 0)
-  (if (= @counter 0)
-    (do
 
-      (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
-      (swap! canvas assoc-in [:paths]
-             (conj (:paths @canvas) (tree/seed-tree
-                                     {:x 0 :y (- window-height 50)}
-                                     {:x window-width :y (- window-height 50)}
-                                     {:is-random? true
-                                      :growth-delay (rand-int 150)
-                                      :seed-count 5
-                                      :branch-rate 50
-                                      :seeds [100 200 300]})))
-      ;; (swap! canvas assoc-in [:paths 0] (tree/branch (get (:paths @canvas) 0) true))
-      ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 200)} {:x window-width :y (- window-height 200)} 2)))
-      ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 100)} {:x window-width :y (- window-height 100)} 2)))
-      ;; (println (:paths @canvas))
-      (doseq [path (:paths @canvas)
-              :let [nodes (:nodes path)]]
-        (doseq [node nodes]
-          (println "pos:" (:position node) "id:" (:ID node) "pid:" (:parent-node-id (:data node)) "age:" (:age (:data path)) "dgb:" (:delay-growth-by (:data node)) "branch-count:" (:branch-count (:data node))))
-        (draw/drawPath path)))
+  (if (and (= @counter 0)
+           @tree/trees)
+    (swap! canvas assoc-in [:paths]
+           (conj (:paths @canvas) (tree/seed-tree
+                                   {:x 0 :y (+ window-height 150)}
+                                   {:x window-width :y (+ window-height 150)}
+                                   {:is-random? true
+                                    :growth-delay (rand-int 200)
+                                    :seed-count 2
+                                    :branch-rate 50
+                                    :seeds [100 200 300]})))
+    (doseq [path-index (range (count (:paths @canvas)))]
 
-    (let []
-      (doseq [path-index (range (count (:paths @canvas)))]
-
+      (if @tree/trees
         (when (= (:type (:data (get (:paths @canvas) path-index))) "tree")
 
-          (swap! canvas assoc-in [:paths path-index] (tree/applyTreeGrowth (get (:paths @canvas) path-index) window-width window-height)))
+          (swap! canvas assoc-in [:paths path-index] (tree/applyTreeGrowth (get (:paths @canvas) path-index) window-width window-height))
 
-        (when (= (:type (:data (get (:paths @canvas) path-index))) "shape")
-          (swap! canvas assoc-in [:paths path-index]
-                 (if (> (:age (:data (get (:paths @canvas) path-index))) 230)
-                   (path/setAllNodesToFixed (get (:paths @canvas) path-index))
-                   (path/incPathAge (shape/adjustRectangle
-                                     (get (:paths @canvas) path-index)
-                                     (- window-width @counter)
-                                     (- window-height @counter)
-                                     {:x (/ window-width 2) :y (/ window-height 2)})))))
-        ;; (when (< @node-count (count nodes)) 
-        ;;   (println "---------------")
-        ;;   (doseq [node nodes] 
-        ;;     (println "pos:" (:position node) "id:" (:ID node) "pid:" (:parent-node-id (:data node)) "age:" (:age (:data path)) "dgb:" (:delay-growth-by (:data node)) "branch-count:" (:branch-count (:data node))))) 
-        ;; (reset! node-count (count nodes))
-        (draw/drawPath (get (:paths @canvas) path-index)))))
-  (swap! counter inc)
-  ;; (Thread/sleep 100)
-  )
+          (when (not @tree/trees)
+              (swap! canvas assoc-in [:lines] (path/convertPathToLines (get (:paths @canvas) path-index)))))
+
+        (let [rays (rt/getRays {:x (mouse-x) :y (mouse-y)} 150 3000 (:lines @canvas))]
+          (doseq [r (range (count rays))]
+            (line
+             (mouse-x)
+             (mouse-y)
+             (:x (:point-b (get rays r)))
+             (:y (:point-b (get rays r)))))))
+      (draw/drawPath (get (:paths @canvas) path-index))))
+  (swap! counter inc))
+
+
+
+
+;; (defn draw []
+
+;;   (background 0 0 0)
+;;   (if (= @counter 0)
+;;     (do
+
+;;       (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (shape/createRectangle (- window-width 100) (- window-height 100) {:x (/ window-width 2) :y (/ window-height 2)})))
+;;       (swap! canvas assoc-in [:paths]
+;;              (conj (:paths @canvas) (tree/seed-tree
+;;                                      {:x 0 :y (- window-height 50)}
+;;                                      {:x window-width :y (- window-height 50)}
+;;                                      {:is-random? true
+;;                                       :growth-delay (rand-int 150)
+;;                                       :seed-count 5
+;;                                       :branch-rate 50
+;;                                       :seeds [100 200 300]})))
+;;       ;; (swap! canvas assoc-in [:paths 0] (tree/branch (get (:paths @canvas) 0) true))
+;;       ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 200)} {:x window-width :y (- window-height 200)} 2)))
+;;       ;; (swap! canvas assoc-in [:paths] (conj (:paths @canvas) (tree/seed-tree {:x 0 :y (- window-height 100)} {:x window-width :y (- window-height 100)} 2)))
+;;       ;; (println (:paths @canvas))
+;;       (doseq [path (:paths @canvas)
+;;               :let [nodes (:nodes path)]]
+;;         (doseq [node nodes]
+;;           (println "pos:" (:position node) "id:" (:ID node) "pid:" (:parent-node-id (:data node)) "age:" (:age (:data path)) "dgb:" (:delay-growth-by (:data node)) "branch-count:" (:branch-count (:data node))))
+;;         (draw/drawPath path)))
+
+;;     (let []
+;;       (doseq [path-index (range (count (:paths @canvas)))]
+
+;;         (when (= (:type (:data (get (:paths @canvas) path-index))) "tree")
+
+;;           (swap! canvas assoc-in [:paths path-index] (tree/applyTreeGrowth (get (:paths @canvas) path-index) window-width window-height)))
+
+;;         (when (= (:type (:data (get (:paths @canvas) path-index))) "shape")
+;;           (swap! canvas assoc-in [:paths path-index]
+;;                  (if (> (:age (:data (get (:paths @canvas) path-index))) 230)
+;;                    (path/setAllNodesToFixed (get (:paths @canvas) path-index))
+;;                    (path/incPathAge (shape/adjustRectangle
+;;                                      (get (:paths @canvas) path-index)
+;;                                      (- window-width @counter)
+;;                                      (- window-height @counter)
+;;                                      {:x (/ window-width 2) :y (/ window-height 2)})))))
+;;         ;; (when (< @node-count (count nodes)) 
+;;         ;;   (println "---------------")
+;;         ;;   (doseq [node nodes] 
+;;         ;;     (println "pos:" (:position node) "id:" (:ID node) "pid:" (:parent-node-id (:data node)) "age:" (:age (:data path)) "dgb:" (:delay-growth-by (:data node)) "branch-count:" (:branch-count (:data node))))) 
+;;         ;; (reset! node-count (count nodes))
+;;         (draw/drawPath (get (:paths @canvas) path-index)))))
+;;   (swap! counter inc)
+;;   ;; (Thread/sleep 100)
+;;   )
  
 
 ;; mouse example
