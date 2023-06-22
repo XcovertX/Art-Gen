@@ -67,19 +67,24 @@
 (defn getRays
   "returns a map of rays from a given radius and resolution (ray count)"
   [point-a resolution max-distance]
-  (vec (flatten (for [i (range resolution)]
-                  (let [lines [{:point-a {:x 250 :y 450} :point-b {:x 400 :y 100}}]
-                        direction (* TAU (/ i resolution))
-                        min-distance max-distance
-                        point-b {:x (+ (:x point-a) (* (Math/cos direction) max-distance))
-                                 :y (+ (:y point-a) (* (Math/sin direction) max-distance))}]
-
-                    (for [line lines]
-                      (let [distance (getRayCast point-a point-b (:point-a line) (:point-b line))
-                            min-distance (if (and (< distance min-distance)
-                                                  (> distance 0))
-                                           distance
-                                           max-distance)
-                            point-b {:x (+ (:x point-a) (* (Math/cos direction) min-distance))
-                                     :y (+ (:y point-a) (* (Math/sin direction) min-distance))}]
-                        {:point-a point-a :point-b point-b})))))))
+  (vec 
+   (flatten
+    (for [i (range resolution)]
+      (let [lines [{:point-a {:x 50 :y 150} :point-b {:x 200 :y 400}}
+                   {:point-a {:x 150 :y 150} :point-b {:x 100 :y 100}}
+                   {:point-a {:x 50 :y 450} :point-b {:x 300 :y 453}}
+                   {:point-a {:x 50 :y 350} :point-b {:x 400 :y 400}}]
+            direction (* TAU (/ i resolution))
+            point-b {:x (+ (:x point-a) (* (Math/cos direction) max-distance))
+                     :y (+ (:y point-a) (* (Math/sin direction) max-distance))}
+            min-distance (first
+                          (sort
+                           (for [line lines]
+                             (let [distance (getRayCast point-a point-b (:point-a line) (:point-b line))
+                                   min-distance (if (and (< distance max-distance)
+                                                         (> distance 0))
+                                                  distance
+                                                  max-distance)]
+                               min-distance))))]
+        {:point-a point-a :point-b {:x (+ (:x point-a) (* (Math/cos direction) min-distance))
+                                    :y (+ (:y point-a) (* (Math/sin direction) min-distance))}})))))

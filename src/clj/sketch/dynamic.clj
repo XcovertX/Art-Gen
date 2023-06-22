@@ -23,7 +23,7 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1500)
+(def window-width 700)
 (def window-height 700)
 
 (def img-url "source_images/eye.jpg")
