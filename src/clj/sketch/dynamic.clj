@@ -50,6 +50,17 @@
   ;; (no-loop)
   )
 
+(defn exportCanvas
+  "exports the canvas picture to a given folder"
+  [folder-path file-name]
+  (save (str "sketch-" file-name ".tif"))
+  (let [filename (str "sketch-" file-name ".tif")
+        thumbnail (str "sketch-" file-name "-1000.tif")]
+    (save filename)
+    (sh "convert" "-LZW" filename filename)
+    (sh "convert" "-scale" "1000x1000" filename thumbnail)
+    (println "Done with image" file-name)))
+
 (defn draw []
   (background 0 0 0)
 
@@ -61,7 +72,7 @@
                                    {:x window-width :y (+ window-height 150)}
                                    {:is-random? true
                                     :growth-delay (rand-int 200)
-                                    :seed-count 2
+                                    :seed-count 5
                                     :branch-rate 50
                                     :seeds [100 200 300]})))
     (doseq [path-index (range (count (:paths @canvas)))]
@@ -72,17 +83,19 @@
           (swap! canvas assoc-in [:paths path-index] (tree/applyTreeGrowth (get (:paths @canvas) path-index) window-width window-height))
 
           (when (not @tree/trees)
-              (swap! canvas assoc-in [:lines] (path/convertPathToLines (get (:paths @canvas) path-index)
-                                                                       0 window-width
-                                                                       0 window-height))))
+            (swap! canvas assoc-in [:lines] (path/convertPathToLines (get (:paths @canvas) path-index)
+                                                                     0 window-width
+                                                                     0 window-height))))
 
-        (let [rays (rt/getRays {:x (mouse-x) :y (mouse-y)} 150 2000 (:lines @canvas))]
-          (doseq [r (range (count rays))]
+        (let [rays1 (rt/getRays {:x (mouse-x) :y (mouse-y)} 150 2000 (:lines @canvas))]
+          (doseq [r (range (count rays1))]
             (line
              (mouse-x)
              (mouse-y)
-             (:x (:point-b (get rays r)))
-             (:y (:point-b (get rays r)))))))
+             (:x (:point-b (get rays1 r)))
+             (:y (:point-b (get rays1 r))))) 
+          (draw/drawPath (get (:paths @canvas) path-index))
+          (exportCanvas "test" (str "rays-" @counter))))
       (draw/drawPath (get (:paths @canvas) path-index))))
   (swap! counter inc))
 
