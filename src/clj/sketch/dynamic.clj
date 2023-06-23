@@ -24,7 +24,7 @@
 
 ;; window height x width -- 900 x 900 for drawing
 (def window-width 1100)
-(def window-height 700)
+(def window-height 600)
 
 (def img-url "source_images/eye.jpg")
 (def img (ref nil))
