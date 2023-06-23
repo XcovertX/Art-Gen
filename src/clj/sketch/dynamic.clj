@@ -93,9 +93,7 @@
              (mouse-x)
              (mouse-y)
              (:x (:point-b (get rays1 r)))
-             (:y (:point-b (get rays1 r))))) 
-          (draw/drawPath (get (:paths @canvas) path-index))
-          (exportCanvas "test" (str "rays-" @counter))))
+             (:y (:point-b (get rays1 r)))))))
       (draw/drawPath (get (:paths @canvas) path-index))))
   (swap! counter inc))
 
