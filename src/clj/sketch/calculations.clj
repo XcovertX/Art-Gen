@@ -7,10 +7,11 @@
   (:use [clojure.set :only [union]])
   (:use [clojure.contrib.map-utils :only [deep-merge-with]])
   (:import [org.apache.commons.math3.distribution ParetoDistribution])
-
   (:import [processing.core PShape PGraphics]))
 
 (def TAU (* 2 (Math/PI)))
+(def distance dist)
+(def rand random)
 
 (defn calculateDivisors
   "finds all distinct divisors of a given number"
@@ -61,6 +62,13 @@
   (if (> (random 100) 50)
     true
     false))
+
+(defn calculateRandomInt
+  "returns a random int between two given ints"
+  ([max]
+   (random max))
+  ([min max]
+   (random min max)))
 
 (defn calculateSlope
   "calculates the slope give two points"
@@ -122,3 +130,38 @@
   [vec1 vec2]
   (Math/sqrt
    (reduce + (map #(Math/pow (- %1 %2) 2) vec1 vec2))))
+
+(defn visible? [bc]
+  (every? #(not (neg? %)) bc))
+
+(defn cross [v1 v2]
+  (let [[a1 a2 a3] v1
+        [b1 b2 b3] v2]
+    [(- (* a2 b3) (* a3 b2))
+     (- (* a3 b1) (* a1 b3))
+     (- (* a1 b2) (* a2 b1))]))
+
+(defn bbox [vertices]
+  (let [xsorted (sort-by first vertices)
+        ysorted (sort-by second vertices)
+        [xmin] (first xsorted)
+        [xmax] (last xsorted)
+        [_ ymin] (first ysorted)
+        [_ ymax] (last ysorted)]
+    [(max 0 xmin)
+     (max 0 ymin)
+     (min (width) xmax)
+     (min (height) ymax)]))
+
+(defn barycentric [vertices p]
+  (let [[[x1 y1] [x2 y2] [x3 y3]] vertices
+        [px py] p
+        u1 [(- x3 x1) (- x2 x1) (- x1 px)]
+        u2 [(- y3 y1) (- y2 y1) (- y1 py)]
+        [ux uy uz] (cross u1 u2)]
+    (if (zero? (Math/abs uz))
+      [-1 1 1]
+      (let [u (- 1.0 (/ (+ ux uy) uz))
+            v (float (/ uy uz))
+            w (float (/ ux uz))]
+        [u v w]))))
