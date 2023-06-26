@@ -331,66 +331,65 @@
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [data]
-  (doseq [x (range 1)]
-    (when (:area-is-rectangle? data)
-      (do
-        (divideTriangles
-         (:triangle-map data)
-         {}
-         (:depth data)
-         (:x-min data)
-         (:y-min data)
-         (:x-max data)
-         (:y-min data)
-         (:x-max data)
-         (:y-max data))
-        (divideTriangles
-         (:triangle-map data)
-         {}
-         (:depth data)
-         (:x-min data)
-         (:y-min data)
-         (:x-max data)
-         (:y-max data)
-         (:x-min data)
-         (:y-max data))))
-    (when (:area-is-triangle? data)
-      (do
-        (divideTriangles
-         (:triangle-map data)
-         {}
-         (:depth data)
-         (:x1 data)
-         (:y1 data)
-         (:x2 data)
-         (:y2 data)
-         (:x3 data)
-         (:y3 data))))
-    (doseq [tri (:triangles @(:triangle-map data))]
-      (let [p (:pix tri)
-            triangle-center (calc/calculateTriangleCenter [(:x1 tri)
-                                                           (:y1 tri)
-                                                           (:x2 tri)
-                                                           (:y2 tri)
-                                                           (:x3 tri)
-                                                           (:y3 tri)])
+  (when (:area-is-rectangle? data)
+    (do
+      (divideTriangles
+       (:triangle-map data)
+       {}
+       (:depth data)
+       (:x-min data)
+       (:y-min data)
+       (:x-max data)
+       (:y-min data)
+       (:x-max data)
+       (:y-max data))
+      (divideTriangles
+       (:triangle-map data)
+       {}
+       (:depth data)
+       (:x-min data)
+       (:y-min data)
+       (:x-max data)
+       (:y-max data)
+       (:x-min data)
+       (:y-max data))))
+  (when (:area-is-triangle? data)
+    (do
+      (divideTriangles
+       (:triangle-map data)
+       {}
+       (:depth data)
+       (:x1 data)
+       (:y1 data)
+       (:x2 data)
+       (:y2 data)
+       (:x3 data)
+       (:y3 data))))
+  (doseq [tri (:triangles @(:triangle-map data))]
+    (let [p (:pix tri)
+          triangle-center (calc/calculateTriangleCenter [(:x1 tri)
+                                                         (:y1 tri)
+                                                         (:x2 tri)
+                                                         (:y2 tri)
+                                                         (:x3 tri)
+                                                         (:y3 tri)])
 
-            distance-to-center (calc/calculateDistanceFromCenter triangle-center)
-            rand (random 100)
-            average? (cond
-                       (>= distance-to-center 600) (if (< (random 100) 50)
-                                                     true
-                                                     false)
-                       (>= distance-to-center 500) (if (< (random 100) 32)
-                                                     true
-                                                     false)
-                       (>= distance-to-center 400) (if (< (random 100) 16)
-                                                     true
-                                                     false)
-                       (>= distance-to-center 200) (if (< (random 100) 8)
-                                                     true
-                                                     false)
-                       :else false)
+          distance-to-center (calc/calculateDistanceFromCenter triangle-center)
+          rand (random 100)
+          average? (cond
+                     (>= distance-to-center 600) (if (< (random 100) 50)
+                                                   true
+                                                   false)
+                     (>= distance-to-center 500) (if (< (random 100) 32)
+                                                   true
+                                                   false)
+                     (>= distance-to-center 400) (if (< (random 100) 16)
+                                                   true
+                                                   false)
+                     (>= distance-to-center 200) (if (< (random 100) 8)
+                                                   true
+                                                   false)
+                     :else false)
                 ;; depth (cond
                 ;;         (>= (:iteration tri) 13) 26
                 ;;         (= (:iteration tri) 12) 24
@@ -407,26 +406,26 @@
                 ;;         (= (:iteration tri) 1) 2
                 ;;         :else 0)
 
-            aver-r (if (= average? false)
-                     (calculateAverageColor p :r)
-                     (- (calculateAverageColor p :r) 30))
-            aver-g (if (= average? false)
-                     (calculateAverageColor p :g)
-                     (- (calculateAverageColor p :g) 30))
-            aver-b (if (= average? false)
-                     (calculateAverageColor p :b)
-                     (- (calculateAverageColor p :b) 30))
+          aver-r (if (= average? false)
+                   (calculateAverageColor p :r)
+                   (- (calculateAverageColor p :r) 30))
+          aver-g (if (= average? false)
+                   (calculateAverageColor p :g)
+                   (- (calculateAverageColor p :g) 30))
+          aver-b (if (= average? false)
+                   (calculateAverageColor p :b)
+                   (- (calculateAverageColor p :b) 30))
 
                 ;; aver-r (- (colo/calculateAverageColor p :r) depth)
                 ;; aver-g (+ (colo/calculateAverageColor p :g) depth)
                 ;; aver-b (+ (colo/calculateAverageColor p :b) depth)
-            ]
+          ]
 
             ;; sets shape color to average of the shape's collection of pixels
-        (doseq [coord p]
-          (let [rgb (first (getPixelColors (vector coord)))
-                x (:x coord)
-                y (:y coord)]
+      (doseq [coord p]
+        (let [rgb (first (getPixelColors (vector coord)))
+              x (:x coord)
+              y (:y coord)]
 
 
-            (set-pixel x y (color aver-r aver-g aver-b))))))))
+          (set-pixel x y (color aver-r aver-g aver-b)))))))

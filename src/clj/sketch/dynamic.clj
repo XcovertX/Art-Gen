@@ -62,28 +62,29 @@
 (defn draw []
   (doseq [img-num (range 2)] ;; picks how many pictures to make
 
-    (image @img (/ window-width 2) (/ window-height 2))
+    
+    (doseq [x (range 1)]
+      (image @img (/ window-width 2) (/ window-height 2))
+      (if (> img-num 0)
+        (do
+          (divi/buildTriangles {:area-is-rectangle? true
+                                :area-is-triangle? false
+                                :x-min 0
+                                :y-min 0
+                                :x-max window-width
+                                :y-max window-height
+                                :depth 13
+                                :triangle-map (atom {:triangle-count 0 :triangles []})})
 
-    (if (> img-num 0)
-      (do
-        (divi/buildTriangles {:area-is-rectangle? true
-                              :area-is-triangle? false
-                              :x-min 0
-                              :y-min 0
-                              :x-max window-width
-                              :y-max window-height
-                              :depth 13
-                              :triangle-map (atom {:triangle-count 0 :triangles []})})
 
-
-        (save (str "sketch-" img-num ".tif"))
-        (let [filename (str "sketch-" img-num ".tif")
-              thumbnail (str "sketch-" img-num "-1000.tif")]
-          (save filename)
-          (sh "convert" "-LZW" filename filename)
-          (sh "convert" "-scale" "1000x1000" filename thumbnail)
-          (println "Done with image" img-num)
-          (println "Job finished."))))))
+          (save (str "sketch-" img-num ".tif"))
+          (let [filename (str "sketch-" img-num ".tif")
+                thumbnail (str "sketch-" img-num "-1000.tif")]
+            (save filename)
+            (sh "convert" "-LZW" filename filename)
+            (sh "convert" "-scale" "1000x1000" filename thumbnail)
+            (println "Done with image" img-num)
+            (println "Job finished.")))))))
 
 ;; (defn draw []
 ;;   (background 0 0 0)
