@@ -66,7 +66,7 @@
     (doseq [x (range 1)]
       
       (if (> img-num 0)
-        (divi/buildTriangles {:area-is-rectangle? true
+        (shape/buildTriangles {:area-is-rectangle? true
                               :area-is-triangle? false
                               :x-min 0
                               :y-min 0
