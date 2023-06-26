@@ -3,6 +3,14 @@
             [sketch.path :as path])
   (:use [clojure.pprint]))
 
+(defn fillShape
+  "colors the entire shape with a given color"
+  [shape c]
+  (let [pixel-collection (:pix shape)]
+    (doseq [pixel pixel-collection]
+      (let [x (:x pixel) y (:y pixel)]
+        (set-pixel x y c)))))
+
 (defn colorSpectrum
   "changes the color of node output to RGB spectrum R: @ 0 V: @ length of vector"
   [nodes]

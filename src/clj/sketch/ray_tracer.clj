@@ -1,4 +1,4 @@
-(ns sketch.ray-tracer
+(ns sketch.ray_tracer
   (:require [quil.core :refer :all]
             [sketch.calculations :as calc])
   (:use [clojure.pprint]))

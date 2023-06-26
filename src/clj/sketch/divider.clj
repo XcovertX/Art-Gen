@@ -1,8 +1,7 @@
 (ns sketch.divider
   (:require [quil.core :refer :all]
             [clojure.java.shell :refer [sh]]
-            [sketch.calculations :as calc]
-            )
+            [sketch.calculations :as calc])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -12,7 +11,7 @@
 
   (:import [processing.core PShape PGraphics]))
 
-(def triangle-map (atom {:triangle-count 0 :triangles []}))
+;; (def triangle-map (atom {:triangle-count 0 :triangles []}))
 (defrecord Triangle [number iteration x1 y1 x2 y2 x3 y3 pix])
 
 (def square-map (atom {:square-count 0 :squares []}))
@@ -45,9 +44,9 @@
    seperated by a given distance."
   [distance x1 x2]
   (if (>= (- x2 x1) distance)
-   (let [middle (calc/calculateMiddle x1 x2)]
-     (divideCanvasVertical distance x1 middle)
-     (divideCanvasVertical distance middle x2)))
+    (let [middle (calc/calculateMiddle x1 x2)]
+      (divideCanvasVertical distance x1 middle)
+      (divideCanvasVertical distance middle x2)))
   (swap! xCollection conj x1 x2))
 
 (defn divideCanvasVertically
@@ -78,7 +77,7 @@
     yIntervals))
 
 (defn divideGrid
-   "divides the canvas by a given distance and returns all intersecting points"
+  "divides the canvas by a given distance and returns all intersecting points"
   [distance x1 y1 x2 y2]
   (let [xIntervals (into [] (divideVert distance x1 y1 x2 y2))
         yIntervals (into [] (divideHorz distance x1 y1 x2 y2))]
@@ -250,14 +249,14 @@
 
 (defn addTriangle
   "adds a new triangle to traingle-map"
-  [new-triangle]
+  [triangle-map new-triangle]
   (swap! triangle-map update-in [:triangle-count] inc)
   (swap! triangle-map assoc-in [:triangles] (conj (@triangle-map :triangles) new-triangle)))
 
 (defn divideTriangles
   "Divides a given triangle into two new triangles, split
    along the longest edge"
-  [tri-map iteration x1 y1 x2 y2 x3 y3]
+  [triangle-map tri-map iteration x1 y1 x2 y2 x3 y3]
   (let [longest-side (determineLongestTriangleSide x1 y1 x2 y2 x3 y3)
         median (calc/calculateMedian longest-side)
         opposite-corner (getOppositeCorner longest-side)
@@ -269,7 +268,7 @@
       (do
         (if (or (< rand1 99) > depth 9)
           (do
-            (divideTriangles tri-map depth
+            (divideTriangles triangle-map tri-map depth
                              (get median 0)          (get median 1)
                              (get longest-side 0)    (get longest-side 1)
                              (get opposite-corner 0) (get opposite-corner 1))
@@ -277,12 +276,13 @@
             )
           (do
             (addTriangle
+             triangle-map
              (Triangle.
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))
         (if (or (< rand2 99) (> depth 9))
           (do
-            (divideTriangles tri-map depth
+            (divideTriangles triangle-map tri-map depth
                              (get median 0)          (get median 1)
                              (get longest-side 2)    (get longest-side 3)
                              (get opposite-corner 0) (get opposite-corner 1))
@@ -290,17 +290,143 @@
             )
           (do
             (addTriangle
+             triangle-map
              (Triangle.
               (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
               (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]]))))))
       (do
         (addTriangle
+         triangle-map
          (Triangle.
           (@triangle-map :triangle-count) depth x1 y1 x2 y2 x3 y3
           (getTrianglePixels [[x1 y1] [x2 y2] [x3 y3]])))))))
 
+(defn getPixelColors
+  "retrieves a collection of colors for a given group of pixels"
+  [pixel-collection]
+  (map
+   (fn [pix]
+     (let [x (:x pix)
+           y (:y pix)]
+       {:r (red (get-pixel x y)) :g (green (get-pixel x y)) :b (blue (get-pixel x y))}))
+   (for [pix pixel-collection] pix)))
+
+(defn calculateAverageColor
+  "calculates the average color of a given collection of colors"
+  [pixels key]
+  (int
+   (/
+    (reduce +
+            (map
+             (fn [pixel]
+               (let [color (first (getPixelColors (vector pixel)))
+                     rgb (key color)]
+                 (conj rgb)))
+             (for [pixel pixels] pixel)))
+    (let [num (count pixels)]
+      (if (> num 0)
+        num
+        1)))))
+
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
-  [iteration]
-  (divideTriangles {} iteration, 0 0, (width) 0, (width) (height))
-  (divideTriangles {} iteration, 0 0, (width) (height), 0 (height)))
+  [data]
+  (doseq [x (range 1)]
+    (when (:area-is-rectangle? data)
+      (do
+        (divideTriangles
+         (:triangle-map data)
+         {}
+         (:depth data)
+         (:x-min data)
+         (:y-min data)
+         (:x-max data)
+         (:y-min data)
+         (:x-max data)
+         (:y-max data))
+        (divideTriangles
+         (:triangle-map data)
+         {}
+         (:depth data)
+         (:x-min data)
+         (:y-min data)
+         (:x-max data)
+         (:y-max data)
+         (:x-min data)
+         (:y-max data))))
+    (when (:area-is-triangle? data)
+      (do
+        (divideTriangles
+         (:triangle-map data)
+         {}
+         (:depth data)
+         (:x1 data)
+         (:y1 data)
+         (:x2 data)
+         (:y2 data)
+         (:x3 data)
+         (:y3 data))))
+    (doseq [tri (:triangles @(:triangle-map data))]
+      (let [p (:pix tri)
+            triangle-center (calc/calculateTriangleCenter [(:x1 tri)
+                                                           (:y1 tri)
+                                                           (:x2 tri)
+                                                           (:y2 tri)
+                                                           (:x3 tri)
+                                                           (:y3 tri)])
+
+            distance-to-center (calc/calculateDistanceFromCenter triangle-center)
+            rand (random 100)
+            average? (cond
+                       (>= distance-to-center 600) (if (< (random 100) 50)
+                                                     true
+                                                     false)
+                       (>= distance-to-center 500) (if (< (random 100) 32)
+                                                     true
+                                                     false)
+                       (>= distance-to-center 400) (if (< (random 100) 16)
+                                                     true
+                                                     false)
+                       (>= distance-to-center 200) (if (< (random 100) 8)
+                                                     true
+                                                     false)
+                       :else false)
+                ;; depth (cond
+                ;;         (>= (:iteration tri) 13) 26
+                ;;         (= (:iteration tri) 12) 24
+                ;;         (= (:iteration tri) 11) 22
+                ;;         (= (:iteration tri) 10) 20
+                ;;         (= (:iteration tri) 9) 18
+                ;;         (= (:iteration tri) 8) 16
+                ;;         (= (:iteration tri) 7) 14
+                ;;         (= (:iteration tri) 6) 12
+                ;;         (= (:iteration tri) 5) 10
+                ;;         (= (:iteration tri) 4) 8
+                ;;         (= (:iteration tri) 3) 6
+                ;;         (= (:iteration tri) 2) 4
+                ;;         (= (:iteration tri) 1) 2
+                ;;         :else 0)
+
+            aver-r (if (= average? false)
+                     (calculateAverageColor p :r)
+                     (- (calculateAverageColor p :r) 30))
+            aver-g (if (= average? false)
+                     (calculateAverageColor p :g)
+                     (- (calculateAverageColor p :g) 30))
+            aver-b (if (= average? false)
+                     (calculateAverageColor p :b)
+                     (- (calculateAverageColor p :b) 30))
+
+                ;; aver-r (- (colo/calculateAverageColor p :r) depth)
+                ;; aver-g (+ (colo/calculateAverageColor p :g) depth)
+                ;; aver-b (+ (colo/calculateAverageColor p :b) depth)
+            ]
+
+            ;; sets shape color to average of the shape's collection of pixels
+        (doseq [coord p]
+          (let [rgb (first (getPixelColors (vector coord)))
+                x (:x coord)
+                y (:y coord)]
+
+
+            (set-pixel x y (color aver-r aver-g aver-b))))))))
