@@ -6,7 +6,7 @@
             [sketch.grow :as grow]
             [sketch.coral :as coral]
             [sketch.tree :as tree]
-            [sketch.shapes :as shape]
+            [sketch.triangle :as tri]
             [sketch.draw :as draw]
             [sketch.path :as path]
             [sketch.ray_tracer :as rt])
@@ -66,14 +66,15 @@
     (doseq [x (range 1)]
       
       (if (> img-num 0)
-        (shape/buildTriangles {:area-is-rectangle? true
+        (let [triangles (tri/buildTriangles {:area-is-rectangle? true
                               :area-is-triangle? false
                               :x-min 0
                               :y-min 0
                               :x-max window-width
                               :y-max window-height
                               :depth 13
-                              :triangle-map (atom {:triangle-count 0 :triangles []})})
+                              :triangle-map (atom {:triangle-count 0 :node-count 0 :triangles []})})]
+          (println (:node-count triangles)))
         (exportCanvas img-num))))
             (println "Job finished."))
 

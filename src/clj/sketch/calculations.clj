@@ -31,10 +31,13 @@
   "find the half-way point of a given distance"
   [coords]
   (let [random-int (+ (random 20) 30)
-        [x1 y1 x2 y2] coords
+        x1 (:x (first coords))
+        y1 (:y (first coords))
+        x2 (:x (second coords))
+        y2 (:y (second coords))
         new-y (+ (round (* (- y2 y1) (/ random-int 100))) y1)
-        new-x (+ (round (* (- x2 x1) (/ random-int 100))) x1)]
-    (vector new-x new-y)))
+        new-x (+ (round (* (- x2 x1) (/ random-int 100))) x1)] 
+    {:x new-x :y new-y}))
 
 (defn calculateMedianTri
   "find the half-way point of a given distance"
@@ -42,7 +45,7 @@
   (let [[x1 y1 x2 y2] coords
         new-y (+ (/ (- y2 y1) 2) y1)
         new-x (+ (/ (- x2 x1) 2) x1)]
-    (vector new-x new-y)))
+    [new-x new-y]))
 
 (defn calculateMiddle
   "find the middle of two given coordinates"
@@ -54,7 +57,7 @@
   [w h]
   (let [wCenter (calculateMiddle (:x w) (:x h))
         hCenter (calculateMiddle (:y w) (:y h))]
-    [wCenter hCenter]))
+    {:x wCenter :y hCenter}))
 
 (defn calculateRandomBoolean
   "returns a random boolean"
@@ -77,22 +80,31 @@
 
 (defn calculateTriangleCenter
   "finds the center of a given triangle"
-  [tri]
-  (let [[x1 y1 x2 y2 x3 y3] tri
-        [a1 a2] (calculateMedianTri [x1 y1 x2 y2])
-        [b1 b2] (calculateMedianTri [x2 y2 x3 y3])
-        [c1 c2] (calculateMedianTri [x3 y3 x1 y1])
-        div1 (calculateMedianTri [x1 y1 a1 a2])
-        div2 (calculateMedianTri [x2 y2 c1 c2])
-        div3 (calculateMedianTri [x3 y3 b1 b2])]
-    (mapv
-     (fn [x] (conj (round (/ x 3))))
-     (for [x (mapv + div1 div2 div3)] x))))
+  [triangle]
+  (let [x1 (:x (:position (:node-a triangle)))
+        y1 (:y (:position (:node-a triangle)))
+        x2 (:x (:position (:node-b triangle)))
+        y2 (:y (:position (:node-b triangle)))
+        x3 (:x (:position (:node-c triangle)))
+        y3 (:y (:position (:node-c triangle)))
+        a (calculateMedianTri [x1 y1 x2 y2])
+        b (calculateMedianTri [x2 y2 x3 y3])
+        c (calculateMedianTri [x3 y3 x1 y1])
+        div1 (calculateMedianTri [x1 y1 (get a 0) (get a 1)])
+        div2 (calculateMedianTri [x2 y2 (get b 0) (get b 1)])
+        div3 (calculateMedianTri [x3 y3 (get c 0) (get c 1)])
+        result (mapv
+                (fn [x] (conj (round (/ x 3))))
+                (for [x (mapv + div1 div2 div3)] x))]
+{:x (get result 0) :y (get result 1)}))
 
 (defn calculateDistance
   "finds the distance between two given points"
-  [coord]
-  (let [[x1 y1 x2 y2] coord
+  [point-a point-b]
+  (let [x1 (:x point-a) 
+        y1 (:y point-a)
+        x2 (:x point-b)
+        y2 (:y point-b)
         x (- (+ (- (* x2 x2) (* x2 x1)) (* x1 x1)) (* x2 x1))
         y (- (+ (- (* y2 y2) (* y2 y1)) (* y1 y1)) (* y2 y1))]
     (sqrt (+ x y))))
@@ -100,9 +112,8 @@
 (defn calculateDistanceFromCenter
   "finds the distance from the center of the canvas to a given point"
   [coord]
-  (let [[x1 y1] (calculateCenter {:x 0 :y 0} {:x (width) :y (height)})
-        [x2 y2] coord]
-    (calculateDistance [x1 y1 x2 y2])))
+  (let [center (calculateCenter {:x 0 :y 0} {:x (width) :y (height)})]
+    (calculateDistance center coord)))
 
 (defn retrieveLinePixels
   "recurisively retrieves the pixels of a given line"
