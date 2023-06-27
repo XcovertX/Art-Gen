@@ -155,11 +155,16 @@
                       {:node-id (:node-id right-node)  :x (:x right-node)  :y (:y right-node)}
                       {:node-id (:node-id bottom-node) :x (:x bottom-node) :y (:y bottom-node)})))))
 
+(defn insertNode
+  []
+  );;you havve to insert individual nodes
+
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [data]
-  (when (:area-is-rectangle? data)
-    (swap! (:triangle-map data) assoc-in [:node-count] 3)
+  (when (:area-is-rectangle? data) 
+    ;; (swap! (:triangle-map data) assoc-in [(str (:node-count @(:triangle-map data))) :nodes] )
+    (swap! (:triangle-map data) update-in [:node-count] inc)
     (divideTriangles
      (:triangle-map data)
      {}
@@ -176,7 +181,7 @@
      {:node-id 0 :x (:x-max data) :y (:y-max data)} 
      {:node-id (:node-count @(:triangle-map data)) :x (:x-min data) :y (:y-max data)}))
   (when (:area-is-triangle? data)
-    (swap! (:triangle-map data) assoc-in [:node-count] 3)
+    (swap! (:triangle-map data) assoc-in [:node-count] 2)
     (divideTriangles
      (:triangle-map data)
      {}

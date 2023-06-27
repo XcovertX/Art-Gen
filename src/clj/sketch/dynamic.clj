@@ -36,7 +36,7 @@
   (stroke 360 0 360)
   (stroke-weight 2)
   ;; (background 0 0 0)
-  ;; (fill 255)
+  (fill 0)
   (reset! canvas {:paths [] :lines []})
   (reset! counter 0)
   (reset! tree/trees true)
@@ -67,15 +67,36 @@
       
       (if (> img-num 0)
         (let [triangles (tri/buildTriangles {:area-is-rectangle? true
-                              :area-is-triangle? false
-                              :x-min 0
-                              :y-min 0
-                              :x-max window-width
-                              :y-max window-height
-                              :depth 13
-                              :triangle-map (atom {:triangle-count 0 :node-count 0 :triangles []})})]
-          (println (:node-count triangles)))
-        (exportCanvas img-num))))
+                                             :area-is-triangle? false
+                                             :x-min 0
+                                             :y-min 0
+                                             :x-max window-width
+                                             :y-max window-height
+                                             :depth 2
+                                             :triangle-map (atom {:triangle-count 0 :node-count 0 :triangles []})})]
+          (println (:node-count triangles))
+          (doseq [triangle (:triangles triangles)]
+            (let [a-id (:ID (:node-a (:nodes triangle)))
+                  ax (:x (:position (:node-a (:nodes triangle))))
+                  ay (:y (:position (:node-a (:nodes triangle))))
+                  b-id (:ID (:node-b (:nodes triangle)))
+                  bx (:x (:position (:node-b (:nodes triangle))))
+                  by (:y (:position (:node-b (:nodes triangle))))
+                  c-id (:ID (:node-c (:nodes triangle)))
+                  cx (:x (:position (:node-c (:nodes triangle))))
+                  cy (:y (:position (:node-c (:nodes triangle))))] 
+              
+              (ellipse ax ay 2 2)
+              (text (str a-id) (+ ax 5) ay)
+              
+              (ellipse bx by 2 2)
+              ;; (text (str b-id) bx (+ by 5))
+              
+              (ellipse cx cy 2 2)
+              ;; (text (str c-id) (- cx 5) cy)
+              (println "------------")
+              (println ["A:" a-id "x:" ax "y:" ay "B:" b-id "x:" bx "y:" by "C:" c-id "x:" cx "y:" cy])))))
+          (exportCanvas img-num)))
             (println "Job finished."))
 
 ;; (defn draw []
