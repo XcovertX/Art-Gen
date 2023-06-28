@@ -20,10 +20,10 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1100)
-(def window-height 600)
+(def window-width 600)
+(def window-height 799)
 
-(def img-url "source_images/eye.jpg")
+(def img-url "source_images/tonybw.jpg")
 (def img (ref nil))
 (def canvas (atom {:paths []}))
 (def counter (atom 0))
@@ -32,8 +32,8 @@
 (defn setup []
   (dosync (ref-set img (load-image img-url))) 
   (color-mode :rgb)
-  (image-mode :center)
-  (stroke 360 0 360)
+  ;; (image-mode :corner)
+  (stroke 360 360 360)
   (stroke-weight 2)
   ;; (background 0 0 0)
   (fill 0)
@@ -45,8 +45,7 @@
   (reset! node-count 0)
   (reset! path/nodeIDCounter 0)
   (reset! path/pathIDCounter 0)
-  (no-loop)
-  )
+  (no-loop))
 
 (defn exportCanvas
   "exports the canvas picture to a given folder"
@@ -60,9 +59,10 @@
     (println "Done with image" file-name)))
 
 (defn draw []
-  (doseq [img-num (range 2)] ;; picks how many pictures to make
+  (doseq [img-num (range 10)] ;; picks how many pictures to make
 
-    (image @img (/ window-width 2) (/ window-height 2))
+    (image @img 0 0 window-width window-height)
+    (println "start draw")
     (doseq [x (range 1)]
       
       (if (> img-num 0)
@@ -72,30 +72,31 @@
                                              :y-min 0
                                              :x-max window-width
                                              :y-max window-height
-                                             :depth 2
-                                             :triangle-map (atom {:triangle-count 0 :node-count 0 :triangles []})})]
-          (println (:node-count triangles))
-          (doseq [triangle (:triangles triangles)]
-            (let [a-id (:ID (:node-a (:nodes triangle)))
-                  ax (:x (:position (:node-a (:nodes triangle))))
-                  ay (:y (:position (:node-a (:nodes triangle))))
-                  b-id (:ID (:node-b (:nodes triangle)))
-                  bx (:x (:position (:node-b (:nodes triangle))))
-                  by (:y (:position (:node-b (:nodes triangle))))
-                  c-id (:ID (:node-c (:nodes triangle)))
-                  cx (:x (:position (:node-c (:nodes triangle))))
-                  cy (:y (:position (:node-c (:nodes triangle))))] 
-              
-              (ellipse ax ay 2 2)
-              (text (str a-id) (+ ax 5) ay)
-              
-              (ellipse bx by 2 2)
-              ;; (text (str b-id) bx (+ by 5))
-              
-              (ellipse cx cy 2 2)
-              ;; (text (str c-id) (- cx 5) cy)
-              (println "------------")
-              (println ["A:" a-id "x:" ax "y:" ay "B:" b-id "x:" bx "y:" by "C:" c-id "x:" cx "y:" cy])))))
+                                             :depth 14
+                                             :triangle-map (atom {:triangle-count 0 :node-count 0 :triangles [] :nodes {}})})]
+          ;; (println (:node-count triangles))
+          ;; (doseq [triangle (:triangles triangles)]
+          ;;   (let [a-id (:node-a (:nodes triangle))
+          ;;         b-id (:node-b (:nodes triangle))
+          ;;         c-id (:node-c (:nodes triangle))]
+
+          ;;     (println "------------")
+          ;;     (println ["A:" a-id])
+          ;;     (println ["B:" b-id])
+          ;; ;;     (println ["C:" c-id])))
+          ;; (doseq [[k v] (:nodes triangles)]
+
+          ;;   (let [id k
+          ;;         x (:x (:position v))
+          ;;         y (:y (:position v))]
+
+          ;;     (ellipse x y 1 1)
+          ;;     (text (str id) (+ x 15) y)
+
+          ;;     (println "*************")
+          ;;     (println ["node:" id "x:" x "y:" y])
+              ;; ))
+          ))
           (exportCanvas img-num)))
             (println "Job finished."))
 

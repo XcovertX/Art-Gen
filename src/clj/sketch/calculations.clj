@@ -31,10 +31,10 @@
   "find the half-way point of a given distance"
   [coords]
   (let [random-int (+ (random 20) 30)
-        x1 (:x (first coords))
-        y1 (:y (first coords))
-        x2 (:x (second coords))
-        y2 (:y (second coords))
+        x1 (:x (:position (first coords)))
+        y1 (:y (:position (first coords)))
+        x2 (:x (:position (second coords)))
+        y2 (:y (:position (second coords)))
         new-y (+ (round (* (- y2 y1) (/ random-int 100))) y1)
         new-x (+ (round (* (- x2 x1) (/ random-int 100))) x1)] 
     {:x new-x :y new-y}))

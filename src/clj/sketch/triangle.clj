@@ -6,13 +6,30 @@
 
 (defrecord Triangle [id iteration nodes pixels])
 
+(defn insertNode
+  "inserts a node into the triangle map if the node does not already exist in the collection"
+  [triangle-map node]
+  (let [node-id (:ID node)]
+    (when (not (contains? (mapv (fn [x] (:ID x)) (:nodes @triangle-map)) node-id))
+      (swap! triangle-map assoc-in [:nodes (keyword (str (:node-count @triangle-map)))] node)
+      (swap! triangle-map update-in [:node-count] inc))
+    (get (:nodes @triangle-map) node-id)))
+
+(defn buildTriangleNode
+  "builds a node with an id that matches the triangle-map pattern"
+  [x y id]
+  (assoc-in (shape/buildNode {:x x :y y}) [:ID] (keyword (str id))))
+
 (defn determineLongestTriangleSide
   "Determines the longest side of a given triangle using"
   [left-node right-node bottom-node]
   (let
-   [lr (calc/distance (:x left-node) (:y left-node) (:x right-node) (:y right-node))
-    rb (calc/distance (:x right-node) (:y right-node) (:x bottom-node) (:y bottom-node))
-    bl (calc/distance (:x bottom-node) (:y bottom-node) (:x left-node) (:y left-node))]
+   [lr (calc/distance (:x (:position left-node))   (:y (:position left-node)) 
+                      (:x (:position right-node))  (:y (:position right-node)))
+    rb (calc/distance (:x (:position right-node))  (:y (:position right-node)) 
+                      (:x (:position bottom-node)) (:y (:position bottom-node)))
+    bl (calc/distance (:x (:position bottom-node)) (:y (:position bottom-node)) 
+                      (:x (:position left-node))   (:y (:position left-node)))]
 
     (if (> lr rb)
       (if (> lr bl)
@@ -47,14 +64,14 @@
   [orientation is-left? ln rn bn nn]
   (if is-left?
     (cond 
-      (= orientation "lr") (:node-id ln)
-      (= orientation "rb") (:node-id nn)
-      (= orientation "bl") (:node-id bn)
+      (= orientation "lr") (:ID ln)
+      (= orientation "rb") (:ID nn)
+      (= orientation "bl") (:ID bn)
       :else -1)
     (cond
-      (= orientation "lr") (:node-id nn)
-      (= orientation "rb") (:node-id rn)
-      (= orientation "bl") (:node-id bn)
+      (= orientation "lr") (:ID nn)
+      (= orientation "rb") (:ID rn)
+      (= orientation "bl") (:ID bn)
       :else -1)))
 
 (defn getRightNodeId
@@ -62,14 +79,14 @@
   [orientation is-left? ln rn bn nn]
   (if is-left?
     (cond
-      (= orientation "lr") (:node-id nn)
-      (= orientation "rb") (:node-id bn)
-      (= orientation "bl") (:node-id ln)
+      (= orientation "lr") (:ID nn)
+      (= orientation "rb") (:ID bn)
+      (= orientation "bl") (:ID ln)
       :else -1)
     (cond
-      (= orientation "lr") (:node-id rn)
-      (= orientation "rb") (:node-id bn)
-      (= orientation "bl") (:node-id nn)
+      (= orientation "lr") (:ID rn)
+      (= orientation "rb") (:ID bn)
+      (= orientation "bl") (:ID nn)
       :else -1)))
 
 (defn getBottomNodeId
@@ -77,14 +94,14 @@
   [orientation is-left? ln rn bn nn]
   (if is-left?
     (cond
-      (= orientation "lr") (:node-id bn)
-      (= orientation "rb") (:node-id ln)
-      (= orientation "bl") (:node-id nn)
+      (= orientation "lr") (:ID bn)
+      (= orientation "rb") (:ID ln)
+      (= orientation "bl") (:ID nn)
       :else -1)
     (cond
-      (= orientation "lr") (:node-id bn)
-      (= orientation "rb") (:node-id nn)
-      (= orientation "bl") (:node-id rn)
+      (= orientation "lr") (:ID bn)
+      (= orientation "rb") (:ID nn)
+      (= orientation "bl") (:ID rn)
       :else -1)))
 
 (defn buildTriangle
@@ -93,10 +110,10 @@
   (Triangle.
    (@triangle-map :triangle-count)
    depth
-   {:node-a (assoc (shape/buildNode {:x (:x node-a) :y (:y node-a)}) :ID (:node-id node-a))
-    :node-b (assoc (shape/buildNode {:x (:x node-b) :y (:y node-b)}) :ID (:node-id node-b))
-    :node-c (assoc (shape/buildNode {:x (:x node-c) :y (:y node-c)}) :ID (:node-id node-c))}
-   (getTrianglePixels [[(:x node-a) (:y node-a)] [(:x node-b) (:y node-b)] [(:x node-c) (:y node-c)]])))
+   {:node-a (:ID node-a) :node-b (:ID node-b) :node-c (:ID node-c)}
+   (getTrianglePixels [[(:x (:position node-a)) (:y (:position node-a))] 
+                       [(:x (:position node-b)) (:y (:position node-b))]
+                       [(:x (:position node-c)) (:y (:position node-c))]])))
 
 (defn addTriangle
   "adds a new triangle to traingle-map"
@@ -107,84 +124,79 @@
 (defn divideTriangles
   "Divides a given triangle into two new triangles, split
    along the longest edge"
-  [triangle-map tri-map iteration left-node right-node bottom-node] 
-  (let [longest-side (determineLongestTriangleSide left-node right-node bottom-node)
-        new-node (assoc (calc/calculateMedian longest-side) :node-id (inc (:node-count @triangle-map)))
-        opposite-corner (getOppositeCorner (get longest-side 2))
-        orientation (last longest-side)
-        depth (dec iteration)
-        rand1 (calc/calculateRandomInt 1 100)
-        rand2 (calc/calculateRandomInt 1 100)]
-
+  [triangle-map iteration left-node right-node bottom-node] 
+  (let [depth (dec iteration)]
     (if (>= depth 0)
-      (do
-        (swap! triangle-map update-in [:node-count] inc)
-        (let [left-node-id   (getLeftNodeId   orientation true left-node right-node bottom-node new-node)
-              right-node-id  (getRightNodeId  orientation true left-node right-node bottom-node new-node)
-              bottom-node-id (getBottomNodeId orientation true left-node right-node bottom-node new-node)]
-          (if (or (< rand1 99) > depth 9)
-            (divideTriangles triangle-map tri-map depth
-                             {:node-id left-node-id   :x (:x (first longest-side)) :y (:y (first longest-side))}
-                             {:node-id right-node-id  :x (:x new-node) :y (:y new-node)}
-                             {:node-id bottom-node-id :x (:x opposite-corner) :y (:y opposite-corner)})
-            (addTriangle
-             triangle-map
-             (buildTriangle triangle-map depth
-                            {:node-id left-node-id   :x (:x (first longest-side)) :y (:y (first longest-side))}
-                            {:node-id right-node-id  :x (:x new-node) :y (:y new-node)}
-                            {:node-id bottom-node-id :x (:x opposite-corner) :y (:y opposite-corner)}))))
-        
-        (let [left-node-id   (getLeftNodeId   orientation false left-node right-node bottom-node new-node)
-              right-node-id  (getRightNodeId  orientation false left-node right-node bottom-node new-node)
-              bottom-node-id (getBottomNodeId orientation false left-node right-node bottom-node new-node)]
-          (if (or (< rand2 99) (> depth 9))
-            (divideTriangles triangle-map tri-map depth
-                             {:node-id left-node-id   :x (:x new-node) :y (:y new-node)}
-                             {:node-id right-node-id  :x (:x (second longest-side)) :y (:y (second longest-side))}
-                             {:node-id bottom-node-id :x (:x opposite-corner) :y (:y opposite-corner)})
-            (addTriangle
-             triangle-map
-             (buildTriangle triangle-map depth
-                            {:node-id left-node-id   :x (:x new-node) :y (:y new-node)}
-                            {:node-id right-node-id  :x (:x (second longest-side)) :y (:y (second longest-side))}
-                            {:node-id bottom-node-id :x (:x opposite-corner) :y (:y opposite-corner)})))))
-      (addTriangle
-       triangle-map
-       (buildTriangle triangle-map depth
-                      {:node-id (:node-id left-node)   :x (:x left-node)   :y (:y left-node)}
-                      {:node-id (:node-id right-node)  :x (:x right-node)  :y (:y right-node)}
-                      {:node-id (:node-id bottom-node) :x (:x bottom-node) :y (:y bottom-node)})))))
+      
+      (let [median (calc/calculateMedian [left-node right-node])
+            new-node (insertNode triangle-map (buildTriangleNode (:x median) (:y median) (:node-count @triangle-map))) 
+            rand1 (calc/calculateRandomInt 1 100)
+            rand2 (calc/calculateRandomInt 1 100)]
 
-(defn insertNode
-  []
-  );;you havve to insert individual nodes
+        (let [longest-side (determineLongestTriangleSide left-node new-node bottom-node)
+              orientation (last longest-side)
+              left-node-id   (getLeftNodeId   orientation true left-node right-node bottom-node new-node)
+              right-node-id  (getRightNodeId  orientation true left-node right-node bottom-node new-node)
+              bottom-node-id (getBottomNodeId orientation true left-node right-node bottom-node new-node)
+              left-node      (left-node-id   (:nodes @triangle-map))
+              right-node     (right-node-id  (:nodes @triangle-map))
+              bottom-node    (bottom-node-id (:nodes @triangle-map))]
+          (if (or (< rand1 99) (> depth 9))
+            (divideTriangles triangle-map depth left-node right-node bottom-node)
+            (let [new-triangle (buildTriangle triangle-map depth left-node right-node bottom-node)]
+              (addTriangle triangle-map new-triangle)
+              new-triangle)
+            ))
+
+        (let [longest-side (determineLongestTriangleSide new-node right-node bottom-node)
+              orientation (last longest-side)
+              left-node-id   (getLeftNodeId   orientation false left-node right-node bottom-node new-node)
+              right-node-id  (getRightNodeId  orientation false left-node right-node bottom-node new-node)
+              bottom-node-id (getBottomNodeId orientation false left-node right-node bottom-node new-node)
+              left-node      (left-node-id   (:nodes @triangle-map))
+              right-node     (right-node-id  (:nodes @triangle-map))
+              bottom-node    (bottom-node-id (:nodes @triangle-map))]
+          (if (or (< rand2 99) (> depth 9))
+            (divideTriangles triangle-map depth left-node right-node bottom-node)
+            (let [new-triangle (buildTriangle triangle-map depth left-node right-node bottom-node)]
+              (addTriangle triangle-map new-triangle)
+              new-triangle))))
+      (let [new-triangle (buildTriangle triangle-map depth left-node right-node bottom-node)]
+        (addTriangle triangle-map new-triangle)
+        new-triangle))))
 
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [data]
-  (when (:area-is-rectangle? data) 
-    ;; (swap! (:triangle-map data) assoc-in [(str (:node-count @(:triangle-map data))) :nodes] )
-    (swap! (:triangle-map data) update-in [:node-count] inc)
+  (when (:area-is-rectangle? data)
+
+
     (divideTriangles
      (:triangle-map data)
-     {}
      (:depth data)
-     {:node-id 0 :x (:x-max data) :y (:y-max data)}
-     {:node-id 1 :x (:x-min data) :y (:y-min data)}
-     {:node-id 2 :x (:x-max data) :y (:y-min data)})
-    (swap! (:triangle-map data) update-in [:node-count] inc)
+     (insertNode (:triangle-map data) 
+                 (buildTriangleNode 
+                  (:x-max data) (:y-max data) (:node-count @(:triangle-map data))))
+     (insertNode (:triangle-map data) 
+                 (buildTriangleNode 
+                  (:x-min data) (:y-min data) (:node-count @(:triangle-map data))))
+     (insertNode (:triangle-map data) 
+                 (buildTriangleNode 
+                  (:x-max data) (:y-min data) (:node-count @(:triangle-map data)))))
+
     (divideTriangles
      (:triangle-map data)
-     {}
      (:depth data)
-     {:node-id 1 :x (:x-min data) :y (:y-min data)}
-     {:node-id 0 :x (:x-max data) :y (:y-max data)} 
-     {:node-id (:node-count @(:triangle-map data)) :x (:x-min data) :y (:y-max data)}))
+     (:1 (:nodes @(:triangle-map data)))
+     (:0 (:nodes @(:triangle-map data)))
+     (insertNode (:triangle-map data) 
+                 (buildTriangleNode 
+                  (:x-min data) (:y-max data) (:node-count @(:triangle-map data))))))
+  
   (when (:area-is-triangle? data)
     (swap! (:triangle-map data) assoc-in [:node-count] 2)
     (divideTriangles
      (:triangle-map data)
-     {}
      (:depth data)
      {:node-id 0 :x (:x1 data) :y (:y1 data)}
      {:node-id 1 :x (:x2 data) :y (:y2 data)}
@@ -192,10 +204,14 @@
   (doseq [tri (:triangles @(:triangle-map data))]
     
     (let [pixels (:pixels tri)
-          nodes (:nodes tri)
+          node-keys (:nodes tri)
+          a ((:node-a node-keys) (:nodes @(:triangle-map data)))
+          b ((:node-b node-keys) (:nodes @(:triangle-map data)))
+          c ((:node-c node-keys) (:nodes @(:triangle-map data)))
+          nodes {:node-a a :node-b b :node-c c}
           triangle-center (calc/calculateTriangleCenter nodes)
 
-          distance-to-center (calc/calculateDistanceFromCenter triangle-center) 
+          distance-to-center (calc/calculateDistanceFromCenter triangle-center)
           average? (cond
                      (>= distance-to-center 600) (if (< (calc/calculateRandomInt 100) 50)
                                                    true
@@ -220,6 +236,5 @@
           aver-b (if (= average? false)
                    (shape/calculateAverageColor pixels :b)
                    (- (shape/calculateAverageColor pixels :b) 30))]
-
       (shape/fillShape pixels aver-r aver-g aver-b)))
       @(:triangle-map data))
