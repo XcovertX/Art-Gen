@@ -40,6 +40,8 @@
 
 -voronoi noise
 
-
-
-
+- differential mesh:
+    -split edges that are too long
+    -avoid inserting new vertices where the vertex density is too high
+    -flip edges to reduce length
+    -add force to make each triangle stay close to equilateral

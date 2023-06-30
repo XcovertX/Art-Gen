@@ -59,20 +59,28 @@
     (println "Done with image" file-name)))
 
 (defn draw []
-  (doseq [img-num (range 10)] ;; picks how many pictures to make
+  (doseq [img-num (range 2)] ;; picks how many pictures to make
 
     (image @img 0 0 window-width window-height)
     (println "start draw")
     (doseq [x (range 1)]
       
       (if (> img-num 0)
-        (let [triangles (tri/buildTriangles {:area-is-rectangle? true
+        (let [triangles (tri/buildTriangles {:area-is-rectangle? false
                                              :area-is-triangle? false
+                                             :area-is-polygon? true
+                                             :area [{:x 100 :y 100} {:x 500 :y 160} {:x 550 :y 260} {:x 500 :y 500} {:x 400 :y 300} {:x 300 :y 700} {:x 100 :y 600}]
                                              :x-min 0
                                              :y-min 0
                                              :x-max window-width
                                              :y-max window-height
-                                             :depth 14
+                                             :x1 100
+                                             :y1 72
+                                             :x2 400
+                                             :y2 50
+                                             :x3 200
+                                             :y3 600
+                                             :depth 13
                                              :triangle-map (atom {:triangle-count 0 :node-count 0 :triangles [] :nodes {}})})]
           ;; (println (:node-count triangles))
           ;; (doseq [triangle (:triangles triangles)]

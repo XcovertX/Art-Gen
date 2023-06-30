@@ -106,3 +106,5 @@
           y (:y pixel)]
       (set-pixel x y (color r g b)))))
 
+
+
