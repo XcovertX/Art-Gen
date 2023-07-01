@@ -93,7 +93,7 @@
 
        (swap! new-paths assoc-in [path-index] (grow/pruneNodes (get @new-paths path-index)))
 
-       (swap! new-paths assoc-in [path-index :nodes] (grow/removeFixed (:nodes (get @new-paths path-index))))
+      ;;  (swap! new-paths assoc-in [path-index :nodes] (grow/removeFixed (:nodes (get @new-paths path-index))))
 
        (when (> (rand-int 100) 50)
          (swap! new-paths assoc-in [path-index] (grow/injectRandomNodeByCurvature (get @new-paths path-index))))
@@ -105,10 +105,13 @@
 (defn seed-coral
   "initializes coral growth"
   [w h]
-  (let [p-1 [(grow/createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
-        p-2 [(grow/addLinePath [0 (/ h 2)] [w (/ h 2)])]
-        p-3 [(grow/createCirclePath 150 100 200 150 150 200 100 150)]
-        p-4 [(grow/addLinePath [0 0] [w h])]
+  (let [
+        ;; p-1 [(grow/createTriangle 50 50 (- w 50) 50 (/ w 2) (- h 50))]
+        ;; p-2 [(grow/addLinePath [0 (/ h 2)] [w (/ h 2)])]
+        ;; p-3 [(grow/createCirclePath 150 100 200 150 150 200 100 150)]
+        p-4 [
+            ;;  (grow/addLinePath [0 0] [w h])
+             ]
         paths (applyCoralGrowth p-4 w h)]
     paths))
 

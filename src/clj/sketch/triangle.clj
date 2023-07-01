@@ -205,10 +205,6 @@
         c (:c vertex)]
     (println "-----------------")
     (println a b c)
-    ;; (println [0 (- (:x a) (:x b)) (- (:x c) (:x b))]
-    ;;          [0 (- (:y a) (:y b)) (- (:y c) (:y b))])
-    ;; (println (first (calc/cross [0 (- (:x a) (:x b)) (- (:x c) (:x b))]
-    ;;                    [0 (- (:y a) (:y b)) (- (:y c) (:y b))])))
     (neg? (first (calc/cross [0 (- (:x a) (:x b)) (- (:x c) (:x b))]
                              [0 (- (:y a) (:y b)) (- (:y c) (:y b))])))))
 
@@ -223,110 +219,58 @@
     (println "poly")
     (println (:verticies @polygon))
     (loop []
-      (loop [index 0]
-        (swap! i inc)
-        (let [point (get (:verticies @polygon) index)
-              neighbors (getNeighboringVerticies index (:verticies @polygon))
-              prev (:prev neighbors)
-              next (:next neighbors)
-              convex (angleIsConvex? {:a prev :b point :c next})
-              diagonal (areaContainsNoOtherVertex? {:a prev :b point :c next} (:verticies @polygon))]
-          
-          (println "prev" prev)
-          (println "point" point)
-          (println "next" next)
-          (println "convex" convex)
-          (println "diag" diagonal)
-          (if (and convex diagonal)
-            (do
-              (swap! triangles assoc-in [:verticies] (conj (:verticies @triangles) {:a prev :b point :c next}))
-              (swap! polygon assoc-in [:verticies] (into []
-                                                         (remove nil?
-                                                                 (mapv
-                                                                  (fn [x] (when (not= index (first x))
-                                                                            (second x)))
-                                                                  (map-indexed vector
-                                                                               (:verticies @polygon))))))
-              (println "tri")
-              (println (:verticies @triangles))
-              (println "poly")
-              (println (:verticies @polygon)))
+      (if (> (count (:verticies @polygon)) 3)
+        (do
+          (loop [index 0]
+            (swap! i inc)
+            (let [point (get (:verticies @polygon) index)
+                  neighbors (getNeighboringVerticies index (:verticies @polygon))
+                  prev (:prev neighbors)
+                  next (:next neighbors)
+                  convex (angleIsConvex? {:a prev :b point :c next})
+                  diagonal (areaContainsNoOtherVertex? {:a prev :b point :c next} (:verticies @polygon))]
 
-            (when (< index (- (count (:verticies @polygon)) 1))
-              (recur (+ index 1))))))
-      (if (<= (count (:verticies @polygon)) 3)
-        
+              (println "prev" prev)
+              (println "point" point)
+              (println "next" next)
+              (println "convex" convex)
+              (println "diag" diagonal)
+              (if (and convex diagonal)
+                (do
+                  (swap! triangles assoc-in [:verticies] (conj (:verticies @triangles) {:a prev :b point :c next}))
+                  (swap! polygon assoc-in [:verticies] (into []
+                                                             (remove nil?
+                                                                     (mapv
+                                                                      (fn [x] (when (not= index (first x))
+                                                                                (second x)))
+                                                                      (map-indexed vector
+                                                                                   (:verticies @polygon))))))
+                  (println "tri")
+                  (println (:verticies @triangles))
+                  (println "poly")
+                  (println (:verticies @polygon)))
+
+                (when (< index (- (count (:verticies @polygon)) 1))
+                  (recur (+ index 1))))))
+          (when (< @i 1000)
+            (recur)))
+
         (let [a (get (:verticies @polygon) 0)
               b (get (:verticies @polygon) 1)
-              c (get (:verticies @polygon) 2)] 
+              c (get (:verticies @polygon) 2)]
           (swap! triangles assoc-in [:verticies] (conj (:verticies @triangles)
                                                        {:a a :b b :c c}))
-          (swap! polygon assoc-in [:verticies] []))
-        (when (< @i 1000) 
-          (recur))))
+          (swap! polygon assoc-in [:verticies] []))))
     (println "tri")
     (println (:verticies @triangles))
     (println "poly")
     (println (:verticies @polygon))
     (:verticies @triangles)))
 
-(defn buildTriangles
-  "Recursively builds triangles to a given iteration"
+(defn drawTriangleMapAverage
   [data]
-  (when (:area-is-polygon? data)
-    (let [triangles (triangulatePolygon (:area data))]
-      (doseq [t triangles]
-        (divideTriangles
-         (:triangle-map data)
-         (:depth data)
-         (insertNode (:triangle-map data)
-                     (buildTriangleNode
-                      (:x (:a t)) (:y (:a t)) (:node-count @(:triangle-map data))))
-         (insertNode (:triangle-map data)
-                     (buildTriangleNode
-                      (:x (:b t)) (:y (:b t)) (:node-count @(:triangle-map data))))
-         (insertNode (:triangle-map data)
-                     (buildTriangleNode
-                      (:x (:c t)) (:y (:c t)) (:node-count @(:triangle-map data))))))))
-  (when (:area-is-rectangle? data)
-    (divideTriangles
-     (:triangle-map data)
-     (:depth data)
-     (insertNode (:triangle-map data) 
-                 (buildTriangleNode 
-                  (:x-max data) (:y-max data) (:node-count @(:triangle-map data))))
-     (insertNode (:triangle-map data) 
-                 (buildTriangleNode 
-                  (:x-min data) (:y-min data) (:node-count @(:triangle-map data))))
-     (insertNode (:triangle-map data) 
-                 (buildTriangleNode 
-                  (:x-max data) (:y-min data) (:node-count @(:triangle-map data)))))
-
-    (divideTriangles
-     (:triangle-map data)
-     (:depth data)
-     (:1 (:nodes @(:triangle-map data)))
-     (:0 (:nodes @(:triangle-map data)))
-     (insertNode (:triangle-map data) 
-                 (buildTriangleNode 
-                  (:x-min data) (:y-max data) (:node-count @(:triangle-map data))))))
-  
-  (when (:area-is-triangle? data)
-    (swap! (:triangle-map data) assoc-in [:node-count] 2)
-    (divideTriangles
-     (:triangle-map data)
-     (:depth data)
-     (insertNode (:triangle-map data)
-                 (buildTriangleNode
-                  (:x1 data) (:y1 data) (:node-count @(:triangle-map data))))
-     (insertNode (:triangle-map data)
-                 (buildTriangleNode
-                  (:x2 data) (:y2 data) (:node-count @(:triangle-map data))))
-     (insertNode (:triangle-map data)
-                 (buildTriangleNode
-                  (:x3 data) (:y3 data) (:node-count @(:triangle-map data))))))
   (doseq [tri (:triangles @(:triangle-map data))]
-    
+
     (let [pixels (:pixels tri)
           node-keys (:nodes tri)
           a ((:node-a node-keys) (:nodes @(:triangle-map data)))
@@ -360,5 +304,29 @@
           aver-b (if (= average? false)
                    (shape/calculateAverageColor pixels :b)
                    (- (shape/calculateAverageColor pixels :b) 30))]
-      (shape/fillShape pixels aver-r aver-g aver-b)))
-      @(:triangle-map data))
+      (shape/fillShape pixels aver-r aver-g aver-b))))
+
+(defn buildTriangles
+  "Recursively builds triangles to a given iteration"
+  [data]
+  (println "area")
+  (println (:area data))
+  (if (>= (count (:area data)) 3)
+    (let [triangles (triangulatePolygon (:area data))]
+      (println "triangulated Area")
+      (println triangles)
+      (doseq [t triangles]
+        (divideTriangles
+         (:triangle-map data)
+         (:depth data)
+         (insertNode (:triangle-map data)
+                     (buildTriangleNode
+                      (:x (:a t)) (:y (:a t)) (:node-count @(:triangle-map data))))
+         (insertNode (:triangle-map data)
+                     (buildTriangleNode
+                      (:x (:b t)) (:y (:b t)) (:node-count @(:triangle-map data))))
+         (insertNode (:triangle-map data)
+                     (buildTriangleNode
+                      (:x (:c t)) (:y (:c t)) (:node-count @(:triangle-map data)))))))
+    (println "The area provided is does not contain 3 or more points")) 
+  data)
