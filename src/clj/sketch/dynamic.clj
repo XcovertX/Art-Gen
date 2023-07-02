@@ -34,6 +34,7 @@
 (def selectBusy (atom false))
 (def toDraw (atom {:primary []
                    :temporary []}))
+(def toolInUse (atom {:select-tool false}))
 
 (defn setup []
   (dosync (ref-set img (load-image img-url))) 
@@ -56,6 +57,7 @@
   (reset! selectBusy false)
   (reset! toDraw {:primary []
                   :temporary []})
+  (reset! toolInUse {:select-tool false})
   ;; (no-loop) 
   )
 
@@ -64,7 +66,7 @@
   [file-name]
   (let [filename (str "sketch-" file-name ".jpg")]
     (save filename)
-    (println "Done with" file-name)))
+    (println "Done with" filename)))
 
 (defn exportCanvas
   "exports the canvas picture to a given folder"
@@ -110,6 +112,33 @@
   []
   (swap! shapes assoc-in [:polygon-select] [])
   (swap! shapes assoc-in [:polygon-select-complete] false))
+
+(defn selectPoint
+  "user selects a point to be the next vertex"
+  [prev-point]
+  (loop []
+    (if (not (mouse-pressed?))
+      (let [x (mouse-x)
+            y (mouse-y)
+            point {:x x :y y}]
+        (addEllipseToPolygonSelect prev-point)
+        (addLineToPolygonSelect prev-point point)
+        (addEllipseToPolygonSelect point)
+        point)
+      (recur))))
+
+(defn selectPolygon
+  "user selects n number of verticies to form a polygon"
+  []
+  (async/thread
+    (loop [t [{:x (mouse-x) :y (mouse-y)}]]
+      (if (mouse-pressed?)
+        (recur (conj t (selectPoint (last t))))
+        (if (key-pressed?)
+          (do
+            (markPolygonSelectPolygonComplete)
+            t)
+          (recur t))))))
 
 (defn selectTriangle
   "user selects 3 spots to form an area"
@@ -165,6 +194,7 @@
         (when (= idx (- (count (:polygon-select @shapes)) 1))
           (if (:polygon-select-complete @shapes)
             (let [start-point (first (:polygon-select @shapes))]
+
               (line (:x s) (:y s) (:x start-point) (:y start-point)))
             (line (:x s) (:y s) (mouse-x) (mouse-y)))))
       (when (= (:type s) "line")
@@ -180,7 +210,6 @@
   []
   (image @img 0 0 window-width window-height)
   (when (not (empty? (:primary @toDraw)))
-    (println "here")
     (let [td (first (:primary @toDraw))] 
       (swap! toDraw assoc-in [:primary] (rest (:primary @toDraw)))
       (tri/drawTriangleMapAverage td)
@@ -211,7 +240,7 @@
      (when (and (mouse-pressed?)
                 (not @selectBusy))
        (swap! selectBusy not)
-       (let [area (selectTriangle)]
+       (let [area (selectPolygon)]
 
          (async/go
            (let [triangle-data (tri/buildTriangles {:draw-type "average"

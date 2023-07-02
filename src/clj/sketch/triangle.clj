@@ -203,8 +203,6 @@
   (let [a (:a vertex)
         b (:b vertex)
         c (:c vertex)]
-    (println "-----------------")
-    (println a b c)
     (neg? (first (calc/cross [0 (- (:x a) (:x b)) (- (:x c) (:x b))]
                              [0 (- (:y a) (:y b)) (- (:y c) (:y b))])))))
 
@@ -214,10 +212,6 @@
   (let [triangles (atom {:verticies []})
         polygon (atom {:verticies p})
         i (atom 0)]
-    (println "tri")
-    (println (:verticies @triangles))
-    (println "poly")
-    (println (:verticies @polygon))
     (loop []
       (if (> (count (:verticies @polygon)) 3)
         (do
@@ -230,11 +224,6 @@
                   convex (angleIsConvex? {:a prev :b point :c next})
                   diagonal (areaContainsNoOtherVertex? {:a prev :b point :c next} (:verticies @polygon))]
 
-              (println "prev" prev)
-              (println "point" point)
-              (println "next" next)
-              (println "convex" convex)
-              (println "diag" diagonal)
               (if (and convex diagonal)
                 (do
                   (swap! triangles assoc-in [:verticies] (conj (:verticies @triangles) {:a prev :b point :c next}))
@@ -244,11 +233,7 @@
                                                                       (fn [x] (when (not= index (first x))
                                                                                 (second x)))
                                                                       (map-indexed vector
-                                                                                   (:verticies @polygon))))))
-                  (println "tri")
-                  (println (:verticies @triangles))
-                  (println "poly")
-                  (println (:verticies @polygon)))
+                                                                                   (:verticies @polygon)))))))
 
                 (when (< index (- (count (:verticies @polygon)) 1))
                   (recur (+ index 1))))))
@@ -261,10 +246,7 @@
           (swap! triangles assoc-in [:verticies] (conj (:verticies @triangles)
                                                        {:a a :b b :c c}))
           (swap! polygon assoc-in [:verticies] []))))
-    (println "tri")
-    (println (:verticies @triangles))
-    (println "poly")
-    (println (:verticies @polygon))
+    
     (:verticies @triangles)))
 
 (defn drawTriangleMapAverage
@@ -309,12 +291,10 @@
 (defn buildTriangles
   "Recursively builds triangles to a given iteration"
   [data]
-  (println "area")
-  (println (:area data))
+
   (if (>= (count (:area data)) 3)
     (let [triangles (triangulatePolygon (:area data))]
-      (println "triangulated Area")
-      (println triangles)
+
       (doseq [t triangles]
         (divideTriangles
          (:triangle-map data)
