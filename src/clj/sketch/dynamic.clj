@@ -21,20 +21,20 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1000)
-(def window-height 667)
+(def window-width 960)
+(def window-height 640)
 
-(def img-url "source_images/sun.jpg")
+(def img-url "source_images/eye.jpg")
 (def img (ref nil))
 (def canvas (atom {:paths []}))
 (def counter (atom 0))
 (def node-count (atom 0))
 (def shapes (atom {:polygon-select-complete false
                    :polygon-select []}))
-(def selectBusy (atom false))
-(def toDraw (atom {:primary []
+(def select-busy (atom false))
+(def to-draw (atom {:primary []
                    :temporary []}))
-(def toolInUse (atom {:select-tool false}))
+(def tool-in-use (atom {:select-tool false}))
 
 (defn setup []
   (dosync (ref-set img (load-image img-url))) 
@@ -42,33 +42,33 @@
   ;; (image-mode :corner)
   (stroke 360 360 360)
   (stroke-weight 2)
-  ;; (background 0 0 0)
+  (background 0 0 0)
   (fill 0)
   (reset! canvas {:paths [] :lines []})
   (reset! counter 0)
   (reset! shapes {:polygon-select-complete false
                   :polygon-select []})
-  ;; (reset! tree/trees true)
-  ;; (reset! tree/counter 0)
-  ;; (reset! tree/i 0)
+  (reset! tree/trees true)
+  (reset! tree/counter 0)
+  (reset! tree/i 0)
   (reset! node-count 0)
-  ;; (reset! path/nodeIDCounter 0)
-  ;; (reset! path/pathIDCounter 0)
-  (reset! selectBusy false)
-  (reset! toDraw {:primary []
+  (reset! path/nodeIDCounter 0)
+  (reset! path/pathIDCounter 0)
+  (reset! select-busy false)
+  (reset! to-draw {:primary []
                   :temporary []})
-  (reset! toolInUse {:select-tool false})
+  (reset! tool-in-use {:select-tool false})
   ;; (no-loop) 
   )
 
-(defn exportJPG
+(defn export-JPG
   "exports the canvas picture to a given folder"
   [file-name]
   (let [filename (str "sketch-" file-name ".jpg")]
-    (save filename)
-    (println "Done with" filename)))
+    (save (str "saved-images/" filename))
+    (println "Done with" filename)))  
 
-(defn exportCanvas
+(defn export-Canvas
   "exports the canvas picture to a given folder"
   [file-name]
   (save (str "sketch-" file-name ".tif"))
@@ -79,7 +79,7 @@
     (sh "convert" "-scale" "1000x1000" filename thumbnail)
     (println "Done with image" file-name)))
 
-(defn addEllipseToPolygonSelect
+(defn add-ellipse-to-polygon-select
   "adds as ellipse to be drawn for the polygon selection tool"
   [point]
   (swap! shapes assoc-in [:polygon-select] (conj
@@ -90,7 +90,7 @@
                                              :w 3
                                              :h 3})))
 
-(defn addLineToPolygonSelect
+(defn add-line-to-polygon-select
   "adds a point that a line will be drawn to. 
    the originating point is center of the previous shape in the collection"
   [point-a point-b]
@@ -103,17 +103,17 @@
                                              :y2 (:y point-b)
                                              :stroke-weight 2})))
 
-(defn markPolygonSelectPolygonComplete
+(defn mark-polygon-select-polygon-complete
   []
   (swap! shapes assoc-in [:polygon-select-complete] true))
 
-(defn clearSelect
+(defn clear-select
   "clears the select tool"
   []
   (swap! shapes assoc-in [:polygon-select] [])
   (swap! shapes assoc-in [:polygon-select-complete] false))
 
-(defn selectPoint
+(defn select-point
   "user selects a point to be the next vertex"
   [prev-point]
   (loop []
@@ -121,71 +121,26 @@
       (let [x (mouse-x)
             y (mouse-y)
             point {:x x :y y}]
-        (addEllipseToPolygonSelect prev-point)
-        (addLineToPolygonSelect prev-point point)
-        (addEllipseToPolygonSelect point)
+        (add-ellipse-to-polygon-select prev-point)
+        (add-line-to-polygon-select prev-point point)
+        (add-ellipse-to-polygon-select point)
         point)
       (recur))))
 
-(defn selectPolygon
+(defn select-polygon
   "user selects n number of verticies to form a polygon"
   []
   (async/thread
     (loop [t [{:x (mouse-x) :y (mouse-y)}]]
       (if (mouse-pressed?)
-        (recur (conj t (selectPoint (last t))))
+        (recur (conj t (select-point (last t))))
         (if (key-pressed?)
           (do
-            (markPolygonSelectPolygonComplete)
+            (mark-polygon-select-polygon-complete)
             t)
           (recur t))))))
-
-(defn selectTriangle
-  "user selects 3 spots to form an area"
-  []
-  (async/thread
-    (let [point-a (loop []
-                    (if (not (mouse-pressed?)) 
-                      (let [x (mouse-x)
-                            y (mouse-y)
-                            point {:x x :y y}] 
-                        (addEllipseToPolygonSelect point)
-                        point)
-                      (recur)))
-          x1 (:x point-a)
-          y1 (:y point-a)
-          point-b (loop []
-                    (if (mouse-pressed?)
-                      (loop []
-                        (if (not (mouse-pressed?)) 
-                          (let [x (mouse-x)
-                                y (mouse-y)
-                                point {:x x :y y}]
-                            (addLineToPolygonSelect point-a point)
-                            (addEllipseToPolygonSelect point)
-                            point)
-                          (recur)))
-                      (recur)))
-          x2 (:x point-b)
-          y2 (:y point-b)
-          point-c (loop []
-                    (if (mouse-pressed?)
-                      (loop []
-                        (if (not (mouse-pressed?)) 
-                          (let [x (mouse-x)
-                                y (mouse-y)
-                                point {:x x :y y}]
-                            (addLineToPolygonSelect point-b point)
-                            (addEllipseToPolygonSelect point)
-                            (markPolygonSelectPolygonComplete)
-                            point)
-                          (recur)))
-                      (recur)))
-          x3 (:x point-c)
-          y3 (:y point-c)]
-      [{:x x1 :y y1} {:x x2 :y y2} {:x x3 :y y3}])))
     
-(defn drawShapes
+(defn draw-temporary-shapes
   []
   (doseq [idx (range (count (:polygon-select @shapes)))]
     (let [s (get (:polygon-select @shapes) idx)]
@@ -200,47 +155,47 @@
       (when (= (:type s) "line")
         (line (:x1 s) (:y1 s) (:x2 s) (:y2 s))))))
 
-(defn addToDraw
+(defn add-to-draw
  "adds a colection of shapes to me drawn"
  [data]
- (swap! toDraw assoc-in [:primary] (conj (:primary @toDraw) data)))
+ (swap! to-draw assoc-in [:primary] (conj (:primary @to-draw) data)))
 
-(defn drawPrimary
+(defn draw-primary
   ""
   []
   (image @img 0 0 window-width window-height)
-  (when (not (empty? (:primary @toDraw)))
-    (let [td (first (:primary @toDraw))] 
-      (swap! toDraw assoc-in [:primary] (rest (:primary @toDraw)))
+  (when (not (empty? (:primary @to-draw)))
+    (let [td (first (:primary @to-draw))] 
+      (swap! to-draw assoc-in [:primary] (rest (:primary @to-draw)))
       (tri/drawTriangleMapAverage td)
-      (exportJPG @counter)
-      (dosync (ref-set img (load-image (str "sketch-" @counter ".jpg"))))
+      (export-JPG @counter)
+      (dosync (ref-set img (load-image (str "saved-images/sketch-" @counter ".jpg"))))
       (swap! counter inc))))
 
-(defn drawStartingImage
+(defn draw-starting-image
   "draws the first image to the screen"
   []
   (image @img 0 0 window-width window-height)
-  (exportJPG @counter)
+  (export-JPG @counter)
   (println "Done with image" @counter)
   (swap! counter inc))
 
-(defn drawTemporary
+(defn draw-temporary
   ""
   []
-  (drawShapes))
+  (draw-temporary-shapes))
 
 (defn draw []
   
   (if (< @counter 1)
-    (drawStartingImage)
+    (draw-starting-image)
     (do
-     (drawPrimary)
-     (drawTemporary)
+     (draw-primary)
+     (draw-temporary)
      (when (and (mouse-pressed?)
-                (not @selectBusy))
-       (swap! selectBusy not)
-       (let [area (selectPolygon)]
+                (not @select-busy))
+       (swap! select-busy not)
+       (let [area (select-polygon)]
 
          (async/go
            (let [triangle-data (tri/buildTriangles {:draw-type "average"
@@ -255,9 +210,9 @@
                                                                     :node-count 0
                                                                     :triangles []
                                                                     :nodes {}})})]
-             (addToDraw triangle-data)
-             (clearSelect)
-             (swap! selectBusy not))))))))
+             (add-to-draw triangle-data)
+             (clear-select)
+             (swap! select-busy not))))))))
 
 ;; (defn draw []
 ;;   (background 0 0 0)
@@ -350,13 +305,6 @@
 ;;   ;; (Thread/sleep 100)
 ;;   )
  
-
-;; mouse example
-  ;; (doseq [[ind capt fn] [[0 "mouse-button" mouse-button]
-  ;;                        [1 "mouse-pressed?" mouse-pressed?]
-  ;;                        [2 "mouse-x" mouse-x] [3 "mouse-y" mouse-y]
-  ;;                        [4 "pmouse-x" pmouse-x] [5 "pmouse-y" pmouse-y]]]
-  ;;   (text (str capt " " (fn)) 10 (+ (* 20 ind) 20)))
 
 
 

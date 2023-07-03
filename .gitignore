@@ -10,3 +10,4 @@ pom.xml.asc
 *.calva
 /.lein-*
 /.nrepl-port
+saved-images/
