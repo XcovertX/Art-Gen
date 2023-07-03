@@ -11,7 +11,8 @@
             [sketch.triangle :as tri]
             [sketch.draw :as draw]
             [sketch.path :as path]
-            [sketch.ray_tracer :as rt])
+            [sketch.ray_tracer :as rt]
+            [sketch.select :as select])
   (:use [incanter.core :only [$=]])
   (:use [clojure.math.combinatorics :only [combinations cartesian-product]])
   (:use [clojure.pprint])
@@ -29,24 +30,20 @@
 (def canvas (atom {:paths []}))
 (def counter (atom 0))
 (def node-count (atom 0))
-(def shapes (atom {:polygon-select-complete false
-                   :polygon-select []}))
-(def select-busy (atom false))
 (def to-draw (atom {:primary []
-                   :temporary []}))
+                    :temporary []}))
 (def tool-in-use (atom {:select-tool false}))
 
 (defn setup []
   (dosync (ref-set img (load-image img-url))) 
   (color-mode :rgb)
-  ;; (image-mode :corner)
   (stroke 360 360 360)
   (stroke-weight 2)
   (background 0 0 0)
   (fill 0)
   (reset! canvas {:paths [] :lines []})
   (reset! counter 0)
-  (reset! shapes {:polygon-select-complete false
+  (reset! select/select-shapes {:polygon-select-complete false
                   :polygon-select []})
   (reset! tree/trees true)
   (reset! tree/counter 0)
@@ -54,7 +51,7 @@
   (reset! node-count 0)
   (reset! path/nodeIDCounter 0)
   (reset! path/pathIDCounter 0)
-  (reset! select-busy false)
+  (reset! select/select-busy false)
   (reset! to-draw {:primary []
                   :temporary []})
   (reset! tool-in-use {:select-tool false})
@@ -79,77 +76,17 @@
     (sh "convert" "-scale" "1000x1000" filename thumbnail)
     (println "Done with image" file-name)))
 
-(defn add-ellipse-to-polygon-select
-  "adds as ellipse to be drawn for the polygon selection tool"
-  [point]
-  (swap! shapes assoc-in [:polygon-select] (conj
-                                            (:polygon-select @shapes)
-                                            {:type "ellipse"
-                                             :x (:x point)
-                                             :y (:y point)
-                                             :w 3
-                                             :h 3})))
 
-(defn add-line-to-polygon-select
-  "adds a point that a line will be drawn to. 
-   the originating point is center of the previous shape in the collection"
-  [point-a point-b]
-  (swap! shapes assoc-in [:polygon-select] (conj
-                                            (:polygon-select @shapes)
-                                            {:type "line"
-                                             :x1 (:x point-a)
-                                             :y1 (:y point-a)
-                                             :x2 (:x point-b)
-                                             :y2 (:y point-b)
-                                             :stroke-weight 2})))
-
-(defn mark-polygon-select-polygon-complete
-  []
-  (swap! shapes assoc-in [:polygon-select-complete] true))
-
-(defn clear-select
-  "clears the select tool"
-  []
-  (swap! shapes assoc-in [:polygon-select] [])
-  (swap! shapes assoc-in [:polygon-select-complete] false))
-
-(defn select-point
-  "user selects a point to be the next vertex"
-  [prev-point]
-  (loop []
-    (if (not (mouse-pressed?))
-      (let [x (mouse-x)
-            y (mouse-y)
-            point {:x x :y y}]
-        (add-ellipse-to-polygon-select prev-point)
-        (add-line-to-polygon-select prev-point point)
-        (add-ellipse-to-polygon-select point)
-        point)
-      (recur))))
-
-(defn select-polygon
-  "user selects n number of verticies to form a polygon"
-  []
-  (async/thread
-    (loop [t [{:x (mouse-x) :y (mouse-y)}]]
-      (if (mouse-pressed?)
-        (recur (conj t (select-point (last t))))
-        (if (key-pressed?)
-          (do
-            (mark-polygon-select-polygon-complete)
-            t)
-          (recur t))))))
     
 (defn draw-temporary-shapes
   []
-  (doseq [idx (range (count (:polygon-select @shapes)))]
-    (let [s (get (:polygon-select @shapes) idx)]
+  (doseq [idx (range (count (:polygon-select @select/select-shapes)))]
+    (let [s (get (:polygon-select @select/select-shapes) idx)]
       (when (= (:type s) "ellipse")
         (ellipse (:x s) (:y s) (:w s) (:h s))
-        (when (= idx (- (count (:polygon-select @shapes)) 1))
-          (if (:polygon-select-complete @shapes)
-            (let [start-point (first (:polygon-select @shapes))]
-
+        (when (= idx (- (count (:polygon-select @select/select-shapes)) 1))
+          (if (:polygon-select-complete @select/select-shapes)
+            (let [start-point (first (:polygon-select @select/select-shapes))]
               (line (:x s) (:y s) (:x start-point) (:y start-point)))
             (line (:x s) (:y s) (mouse-x) (mouse-y)))))
       (when (= (:type s) "line")
@@ -181,7 +118,7 @@
   (swap! counter inc))
 
 (defn draw-temporary
-  ""
+  "draws temporary objects to the screen after the primary image has been updated"
   []
   (draw-temporary-shapes))
 
@@ -193,9 +130,9 @@
      (draw-primary)
      (draw-temporary)
      (when (and (mouse-pressed?)
-                (not @select-busy))
-       (swap! select-busy not)
-       (let [area (select-polygon)]
+                (not @select/select-busy))
+       (swap! select/select-busy not)
+       (let [area (select/select-polygon)]
 
          (async/go
            (let [triangle-data (tri/buildTriangles {:draw-type "average"
@@ -211,8 +148,8 @@
                                                                     :triangles []
                                                                     :nodes {}})})]
              (add-to-draw triangle-data)
-             (clear-select)
-             (swap! select-busy not))))))))
+             (select/clear-select)
+             (swap! select/select-busy not))))))))
 
 ;; (defn draw []
 ;;   (background 0 0 0)
