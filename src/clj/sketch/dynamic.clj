@@ -7,7 +7,8 @@
             [sketch.divider :as divi]
             [sketch.grow :as grow]
             [sketch.coral :as coral]
-            [sketch.tree :as tree]
+            [sketch.tree :as tree] 
+            [sketch.cart :as cart]
             [sketch.triangle :as tri]
             [sketch.draw :as draw]
             [sketch.path :as path]
@@ -34,6 +35,7 @@
                     :temporary []}))
 (def tool-in-use (atom {:select-tool false}))
 
+
 (defn setup []
   (dosync (ref-set img (load-image img-url))) 
   (color-mode :rgb)
@@ -55,6 +57,7 @@
   (reset! to-draw {:primary []
                   :temporary []})
   (reset! tool-in-use {:select-tool false})
+  (reset! cart/cart-count 0)
   ;; (no-loop) 
   )
 
@@ -124,32 +127,36 @@
 
 (defn draw []
   
-  (if (< @counter 1)
-    (draw-starting-image)
-    (do
-     (draw-primary)
-     (draw-temporary)
-     (when (and (mouse-pressed?)
-                (not @select/select-busy))
-       (swap! select/select-busy not)
-       (let [area (select/select-polygon)]
+  (draw-primary))
 
-         (async/go
-           (let [triangle-data (tri/buildTriangles {:draw-type "average"
-                                                    :area (async/<! area)
-                                                    :x-min 0
-                                                    :y-min 0
-                                                    :x-max window-width
-                                                    :y-max window-height
-                                                    :depth 7
-                                                    :triangle-map (atom
-                                                                   {:triangle-count 0
-                                                                    :node-count 0
-                                                                    :triangles []
-                                                                    :nodes {}})})]
-             (add-to-draw triangle-data)
-             (select/clear-select)
-             (swap! select/select-busy not))))))))
+;; (defn draw []
+
+;;   (if (< @counter 1)
+;;     (draw-starting-image)
+;;     (do
+;;       (draw-primary)
+;;       (draw-temporary)
+;;       (when (and (mouse-pressed?)
+;;                  (not @select/select-busy))
+;;         (swap! select/select-busy not)
+;;         (let [area (select/select-polygon)]
+
+;;           (async/go
+;;             (let [triangle-data (tri/buildTriangles {:draw-type "average"
+;;                                                      :area (async/<! area)
+;;                                                      :x-min 0
+;;                                                      :y-min 0
+;;                                                      :x-max window-width
+;;                                                      :y-max window-height
+;;                                                      :depth 7
+;;                                                      :triangle-map (atom
+;;                                                                     {:triangle-count 0
+;;                                                                      :node-count 0
+;;                                                                      :triangles []
+;;                                                                      :nodes {}})})]
+;;               (add-to-draw triangle-data)
+;;               (select/clear-select)
+;;               (swap! select/select-busy not))))))))
 
 ;; (defn draw []
 ;;   (background 0 0 0)
