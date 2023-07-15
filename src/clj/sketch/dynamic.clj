@@ -22,10 +22,10 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 960)
-(def window-height 640)
+(def window-width 600)
+(def window-height 799)
 
-(def img-url "source_images/eye.jpg")
+(def img-url "source_images/tonybw.jpg")
 (def img (ref nil))
 (def canvas (atom {:paths []}))
 (def counter (atom 0))
@@ -104,7 +104,7 @@
   (when (not (empty? (:primary @to-draw)))
     (let [td (first (:primary @to-draw))] 
       (swap! to-draw assoc-in [:primary] (rest (:primary @to-draw)))
-      (tri/drawTriangleMapAverage td)
+      (tri/draw-triangle-map-average td)
       (export-JPG @counter)
       (dosync (ref-set img (load-image (str "saved-images/sketch-" @counter ".jpg"))))
       (swap! counter inc))))

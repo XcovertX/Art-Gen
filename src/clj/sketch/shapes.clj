@@ -11,7 +11,7 @@
   (:import [org.apache.commons.math3.distribution ParetoDistribution])
   (:import [processing.core PShape PGraphics]))
 
-(def buildNode path/buildNode)
+(def build-node path/buildNode)
 
 (defn addLineToPath
   "adds a line to the end of a given path"
