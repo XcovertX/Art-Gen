@@ -37,16 +37,16 @@
 
 
 (defn setup []
-  (dosync (ref-set img (load-image img-url))) 
-  (color-mode :rgb)
+  (dosync (ref-set img (load-image img-url)))
+  (color-mode :hsb)
   (stroke 360 360 360)
   (stroke-weight 2)
   (background 0 0 0)
-  (fill 0)
+  ;; (fill 0)
   (reset! canvas {:paths [] :lines []})
   (reset! counter 0)
   (reset! select/select-shapes {:polygon-select-complete false
-                  :polygon-select []})
+                                :polygon-select []})
   (reset! tree/trees true)
   (reset! tree/counter 0)
   (reset! tree/i 0)
@@ -55,9 +55,13 @@
   (reset! path/pathIDCounter 0)
   (reset! select/select-busy false)
   (reset! to-draw {:primary []
-                  :temporary []})
+                   :temporary []})
   (reset! tool-in-use {:select-tool false})
-  (reset! cart/cart-count 0)
+  (reset! cart/all-cart {:carts []
+                         :count 0
+                         :direction "EAST"
+                         :width window-width
+                         :height window-height})
   ;; (no-loop) 
   )
 
@@ -125,9 +129,15 @@
   []
   (draw-temporary-shapes))
 
-(defn draw []
-  
-  (draw-primary))
+(defn draw [] 
+  (if (< @counter 1)
+    (do
+      (cart/cart-generator 30)
+      (swap! counter inc))
+    (do
+      (background 0 0 0)
+      (cart/update-carts)
+      (swap! counter inc))))
 
 ;; (defn draw []
 
