@@ -1,18 +1,19 @@
 (ns sketch.core
-  (:require [quil.core :as q])
-  (:require [sketch.dynamic :as dynamic])
-  (:gen-class))
+   (:require [quil.core :as q])
+   (:require [sketch.dynamic :as dynamic])
+   (:gen-class))
 
 
-(q/defsketch example
-  :title "Sketch"
-  :setup dynamic/setup
-  :draw dynamic/draw
-  :size [dynamic/window-width 
-         dynamic/window-height])
+ (q/defsketch example
+   :title "Sketch"
+   :setup dynamic/setup
+   :draw dynamic/draw
+   :size [dynamic/window-width
+          dynamic/window-height])
+          
 
-(defn refresh []
-  (use :reload 'sketch.dynamic)
-  (.loop example))
 
+ (defn refresh []
+   (use :reload 'sketch.dynamic)
+   (.loop example))
 

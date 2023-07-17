@@ -24,7 +24,7 @@
 
 ;; window height x width -- 900 x 900 for drawing
 (def window-width 600)
-(def window-height 799)
+(def window-height 800)
 
 (def img-url "source_images/tonybw.jpg")
 (def img (ref nil))
@@ -40,7 +40,7 @@
   (dosync (ref-set img (load-image img-url)))
   (color-mode :hsb)
   (stroke 360 360 360)
-  (stroke-weight 2)
+  (stroke-weight 3)
   (background 0 0 0)
   ;; (fill 0)
   (reset! canvas {:paths [] :lines []})
@@ -61,7 +61,9 @@
                          :count 0
                          :direction "EAST"
                          :width window-width
-                         :height window-height})
+                         :height window-height
+                         :part-width 20
+                         :part-height 20})
   ;; (no-loop) 
   )
 
@@ -130,14 +132,15 @@
   (draw-temporary-shapes))
 
 (defn draw [] 
-  (if (< @counter 1)
+  (if (< @counter 100)
     (do
-      (cart/cart-generator 30)
+      (cart/cart-generator 1)
       (swap! counter inc))
     (do
       (background 0 0 0)
       (cart/update-carts)
-      (swap! counter inc))))
+      (swap! counter inc)))
+  )
 
 ;; (defn draw []
 
