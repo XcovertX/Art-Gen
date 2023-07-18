@@ -23,8 +23,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 600)
-(def window-height 800)
+(def window-width 1000)
+(def window-height 1000)
 
 (def img-url "source_images/tonybw.jpg")
 (def img (ref nil))
@@ -63,7 +63,8 @@
                          :width window-width
                          :height window-height
                          :part-width 20
-                         :part-height 20})
+                         :part-height 20
+                         :color 0})
   ;; (no-loop) 
   )
 
@@ -132,14 +133,16 @@
   (draw-temporary-shapes))
 
 (defn draw [] 
-  (if (< @counter 100)
+  (if (< @counter 1)
     (do
-      (cart/cart-generator 1)
+      (cart/cart-generator 200)
       (swap! counter inc))
     (do
       (background 0 0 0)
-      (cart/update-carts)
-      (swap! counter inc)))
+      (cart/update-carts) 
+      (swap! counter inc)
+      (when (= (mod @counter 10) 0)
+        (cart/inc-color))))
   )
 
 ;; (defn draw []
