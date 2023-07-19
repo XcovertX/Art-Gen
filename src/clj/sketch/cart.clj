@@ -68,6 +68,47 @@
     (line x1 y1 x2 y2)
     (line x1 y2 x2 y1)))
 
+(defn draw-diamond
+  "draws the diamond type"
+  [part cart-position]
+  (let [half-width  (* (:width part) 1/2)
+        half-height (* (:height part) 1/2)
+        x1 (- (+ (:x (:position part)) (:x cart-position)) half-width)
+        y1 (- (:y cart-position) half-height)
+        y2 (+ (:y cart-position) half-height)
+        x2 (+ (+ (:x (:position part)) (:x cart-position)) half-width)
+        x-half (+ x1 half-width)
+        y-half (+ y1 half-height)]
+    (stroke (:color part) 360 360)
+    (line x-half y1 x2 y-half)
+    (line x2 y-half x-half y2)
+    (line x-half y2 x1 y-half)
+    (line x1 y-half x-half y1)))
+
+(defn draw-diag-left
+  "draws the left slope line type"
+  [part cart-position]
+  (let [half-width  (* (:width part) 1/2)
+        half-height (* (:height part) 1/2)
+        x1 (- (+ (:x (:position part)) (:x cart-position)) half-width)
+        y1 (- (:y cart-position) half-height)
+        y2 (+ (:y cart-position) half-height)
+        x2 (+ (+ (:x (:position part)) (:x cart-position)) half-width)]
+    (stroke (:color part) 360 360)
+    (line x1 y1 x2 y2)))
+
+(defn draw-diag-right
+  "draws the right slope line type"
+  [part cart-position]
+  (let [half-width  (* (:width part) 1/2)
+        half-height (* (:height part) 1/2)
+        x1 (- (+ (:x (:position part)) (:x cart-position)) half-width)
+        y1 (- (:y cart-position) half-height)
+        y2 (+ (:y cart-position) half-height)
+        x2 (+ (+ (:x (:position part)) (:x cart-position)) half-width)]
+    (stroke (:color part) 360 360)
+    (line x1 y2 x2 y1)))
+
 (defn draw-cross
   "draws the cross type"
   [part cart-position]
@@ -275,14 +316,14 @@
 
 (defn get-accent-position [x w]
   (cond 
-    (= x 0) (- (* (:part-width @all-cart) w 1/3))
-    (= x 1) (- (* (:part-width @all-cart) w 1/6))
-    (= x 2) (- (* (:part-width @all-cart) w 1/9))
-    (= x 3) (- (* (:part-width @all-cart) w 4/3))
-    (= x 4) (* (:part-width @all-cart) w 4/3) 
-    (= x 5) (* (:part-width @all-cart) w 1/9)
-    (= x 6) (* (:part-width @all-cart) w 1/6)
-    (= x 7) (* (:part-width @all-cart) w 1/3)
+    (= x 0) (- (* (:part-width @all-cart) w 1/4))
+    (= x 1) (- (* (:part-width @all-cart) w 1/8))
+    (= x 2) (- (* (:part-width @all-cart) w))
+    (= x 3) (- (* (:part-width @all-cart) w 1/2))
+    (= x 4) (* (:part-width @all-cart) w 1/2) 
+    (= x 5) (* (:part-width @all-cart) w)
+    (= x 6) (* (:part-width @all-cart) w 1/8)
+    (= x 7) (* (:part-width @all-cart) w 1/4)
     :else (println "failed to get accent poistion")))
 
 (defn build-cart-part
@@ -304,6 +345,9 @@
                (= a 12) "THREE-LINES-VERTICAL"
                (= a 13) "THREE-LINES-HORIZONTAL"
                (= a 14) "X"
+               (= a 15) "DIAG-LEFT"
+               (= a 16) "DIAG-RIGHT"
+               (= a 17) "DIAMOND"
                :else   (println "failed to select cart type"))
         color (cond
                 (= b 0) (+ 0  shade)
@@ -323,7 +367,10 @@
                         (= type "CIRCLE-LG")
                         (= type "CIRCLE-DOT")
                         (= type "BOX-X")
-                        (= type "X"))
+                        (= type "X")
+                        (= type "DIAG-LEFT")
+                        (= type "DIAG-RIGHT")
+                        (= type "DIAMOND"))
                   (get-container-position (rand-int 3) w)
                   (get-accent-position (rand-int 8) w))]
    
@@ -340,22 +387,23 @@
   [dir]
   (cond
     (= dir 0) "NORTH"
-    (= dir 1) "EAST"
-    (= dir 2) "EAST"
-    (= dir 3) "EAST" 
-    (= dir 4) "EAST"
-    (= dir 5) "EAST"
-    (= dir 6) "EAST"
-    (= dir 7) "EAST"
+    (= dir 1) "WEST"
+    (= dir 2) "WEST"
+    (= dir 3) "WEST" 
+    (= dir 4) "WEST"
+    (= dir 5) "WEST"
+    (= dir 6) "WEST"
+    (= dir 7) "WEST"
     :else (println "failed to assign a direction")))
 
 (defn build-cart
   "builds a cart according the random ints given"
-  [parts]
+  [parts rand-color]
   (let [cart (Cart. -1 default-cart-data)
         cart (assign-cart-id cart)
-        rand-speed (+ (rand-int 2000) (:part-width  @all-cart))
-        rand-color (rand-int 8)
+        rand-speed (+ (rand-int (:min-speed @all-cart)) 
+                      (:part-width  @all-cart))
+        ;; rand-color (rand-int 8)
         row-count (/ (:height @all-cart) (:part-height @all-cart))
         col-count (/ (:width  @all-cart) (:part-width  @all-cart))
         rand-row (rand-int row-count)
@@ -384,13 +432,20 @@
           (recur (inc p) (build-cart-part c type rand-color rand-shade)))
         c))))
 
+(defn change-cart-color
+  "changes every cart part color"
+  [cart color]
+  (assoc-in cart [:data :parts] (vec (for [p (:parts (:data cart))]
+                                 (assoc-in p [:color] color)))))
+
 (defn cart-generator
   "generates a give number of uniques carts"
-  [count]
+  [count color]
   (doseq [c (range count)]
     (let [;;parts (vec (take 5 (unique-random-numbers 15)))
-          parts (vec (take 3 (repeatedly #(rand-int 15))))
-          cart  (build-cart parts)] 
+          parts (vec (take (:part-count @all-cart) 
+                           (repeatedly #(rand-int 18))))
+          cart  (build-cart parts color)] 
       (swap! all-cart assoc-in  [:carts] (conj (:carts @all-cart) cart))
       (swap! all-cart update-in [:count] inc))))
 
@@ -415,6 +470,9 @@
         (= (:type part) "DOT")                    (draw-dot part (:position (:data cart)))
         (= (:type part) "THREE-LINES-VERTICAL")   (draw-triple-line-vertical part (:position (:data cart)))
         (= (:type part) "THREE-LINES-HORIZONTAL") (draw-triple-line-horizontal part (:position (:data cart)))
+        (= (:type part) "DIAG-LEFT")              (draw-diag-left part (:position (:data cart)))
+        (= (:type part) "DIAG-RIGHT")             (draw-diag-right part (:position (:data cart)))
+        (= (:type part) "DIAMOND")                (draw-diamond part (:position (:data cart)))
         :else (println "failed to draw" (:type part))))))
 
 (defn move-cart
@@ -432,37 +490,41 @@
                      cart (assoc-in cart [:data :direction] (get-direction rand-direction))]
                  cart))
         cart (cond
-               (= (:direction (:data cart)) "EAST")  (assoc-in cart [:data :position :x] (+ (:x (:position (:data cart))) 2))
-               (= (:direction (:data cart)) "WEST")  (assoc-in cart [:data :position :x] (- (:x (:position (:data cart))) 2))
-               (= (:direction (:data cart)) "SOUTH") (assoc-in cart [:data :position :y] (+ (:y (:position (:data cart))) 2))
-               (= (:direction (:data cart)) "NORTH") (assoc-in cart [:data :position :y] (- (:y (:position (:data cart))) 2))
+               (= (:direction (:data cart)) "EAST")  (let [cart (change-cart-color cart 23)]
+                                                       (assoc-in cart [:data :position :x] (+ (:x (:position (:data cart))) 2)))
+               (= (:direction (:data cart)) "WEST")  (let [cart (change-cart-color cart 23)]
+                                                       (assoc-in cart [:data :position :x] (- (:x (:position (:data cart))) 2)))
+               (= (:direction (:data cart)) "SOUTH") (let [cart (change-cart-color cart 131)]
+                                                       (assoc-in cart [:data :position :y] (+ (:y (:position (:data cart))) 2)))
+               (= (:direction (:data cart)) "NORTH") (let [cart (change-cart-color cart 0)]
+                                                       (assoc-in cart [:data :position :y] (- (:y (:position (:data cart))) 2)))
                :else (println "failed to move cart"))
-        cart (if (> (:x (:position (:data cart))) (:width @all-cart))
-               (let [cart (assoc-in cart [:data :position :x] 0)
+        cart (if (> (:x (:position (:data cart))) (+ (:width @all-cart) (:part-width @all-cart)))
+               (let [cart (assoc-in cart [:data :position :x] (- (:part-width @all-cart)))
                      cart (assoc-in cart [:data :position :y] (- (:y (:position (:data cart))) 
                                                                  (* (:part-height @all-cart) 2)))
                      cart (assoc-in cart [:data :transition-count] -1)
                      cart (assoc-in cart [:data :is-transitioning] true)]
                  cart)
                cart)
-        cart (if (< (:x (:position (:data cart)))  0)
-               (let [cart (assoc-in cart [:data :position :x] (:width @all-cart))
+        cart (if (< (:x (:position (:data cart)))  (- (:part-width @all-cart)))
+               (let [cart (assoc-in cart [:data :position :x] (+ (:width @all-cart) (:part-width @all-cart)))
                      cart (assoc-in cart [:data :position :y] (+ (:y (:position (:data cart))) 
                                                                  (* (:part-height @all-cart) 2)))
                      cart (assoc-in cart [:data :transition-count] -1)
                      cart (assoc-in cart [:data :is-transitioning] true)]
                  cart)
                cart)
-        cart (if (> (:y (:position (:data cart))) (:height @all-cart))
-               (let [cart (assoc-in cart [:data :position :y] 0)
+        cart (if (> (:y (:position (:data cart))) (+ (:height @all-cart) (:part-height @all-cart)))
+               (let [cart (assoc-in cart [:data :position :y] (- (:part-height @all-cart)))
                      cart (assoc-in cart [:data :position :x] (- (:x (:position (:data cart))) 
                                                                  (* (:part-width @all-cart) 2)))
                      cart (assoc-in cart [:data :transition-count] -1)
                      cart (assoc-in cart [:data :is-transitioning] true)]
                  cart)
                cart)
-        cart (if (< (:y (:position (:data cart)))  0)
-               (let [cart (assoc-in cart [:data :position :y] (:height @all-cart))
+        cart (if (< (:y (:position (:data cart))) (- (:part-height @all-cart)))
+               (let [cart (assoc-in cart [:data :position :y] (+ (:height @all-cart) (:part-height @all-cart)))
                      cart (assoc-in cart [:data :position :x] (+ (:x (:position (:data cart))) 
                                                                  (* (:part-width @all-cart) 2)))
                      cart (assoc-in cart [:data :transition-count] -1)
@@ -487,7 +549,13 @@
                                   (if (or (> (:age (:data c)) (:speed (:data c)))
                                           (:is-transitioning (:data c)))
                                     (move-cart c)
-                                    (update-in c [:data :age] inc))))) 
+                                    (let [c (update-in c [:data :age ] inc)
+                                          color (:color (first (:parts (:data c))))
+                                          c (cond
+                                              (< color 131) (change-cart-color c (inc color))
+                                              (> color 131) (change-cart-color c (dec color))
+                                              :else c)]
+                                      c))))) 
   ;; (draw-grid (/ (:width  @all-cart) (:part-width  @all-cart))
   ;;            (/ (:height @all-cart) (:part-height @all-cart)))
   

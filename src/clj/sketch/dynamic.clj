@@ -24,7 +24,7 @@
 
 ;; window height x width -- 900 x 900 for drawing
 (def window-width 450)
-(def window-height 600)
+(def window-height 800)
 
 (def img-url "source_images/tonybw.jpg")
 (def img (ref nil))
@@ -65,7 +65,10 @@
                          :height window-height
                          :part-width 20
                          :part-height 20
-                         :color 0})
+                         :color 0 
+                         :part-count 2
+                         :min-speed 3000
+                         })
   ;; (no-loop) 
   )
 
@@ -133,18 +136,17 @@
   []
   (draw-temporary-shapes))
 
-(defn draw [] 
+(defn draw []
   (if (< @counter 1)
     (do
-      (cart/cart-generator 50)
+      (cart/cart-generator 130 5)
       (swap! counter inc))
     (do
       (background 0 0 0)
-      (cart/update-carts) 
+      (cart/update-carts)
       (swap! counter inc)
       (when (= (mod @counter 10) 0)
-        (cart/inc-color))))
-  )
+        (cart/inc-color)))))
 
 ;; (defn draw []
 
