@@ -59,15 +59,20 @@
                    :temporary []})
   (reset! tool-in-use {:select-tool false})
   (reset! cart/all-cart {:carts []
-                         :count 0
+                         :count 300 
                          :direction "EAST"
                          :width window-width
                          :height window-height
                          :part-width 20
                          :part-height 20
-                         :color 0 
-                         :part-count 2
+                         :color 1
+                         :part-count 1
                          :min-speed 3000
+                         :max-speed 300
+                         :edge-extention 1000
+                         :draw-stationary-parts false
+                         :draw-gridlines true
+                         :draw-cart-center false
                          })
   ;; (no-loop) 
   )
@@ -139,14 +144,12 @@
 (defn draw []
   (if (< @counter 1)
     (do
-      (cart/cart-generator 130 5)
+      (cart/cart-generator)
       (swap! counter inc))
     (do
       (background 0 0 0)
       (cart/update-carts)
-      (swap! counter inc)
-      (when (= (mod @counter 10) 0)
-        (cart/inc-color)))))
+      (swap! counter inc))))
 
 ;; (defn draw []
 
