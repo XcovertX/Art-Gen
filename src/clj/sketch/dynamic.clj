@@ -23,8 +23,8 @@
   (:import [processing.core PShape PGraphics]))
 
 ;; window height x width -- 900 x 900 for drawing
-(def window-width 1000)
-(def window-height 1000)
+(def window-width 450)
+(def window-height 600)
 
 (def img-url "source_images/tonybw.jpg")
 (def img (ref nil))
@@ -41,6 +41,7 @@
   (color-mode :hsb)
   (stroke 360 360 360)
   (stroke-weight 3)
+  (ellipse-mode :radius)
   (background 0 0 0)
   ;; (fill 0)
   (reset! canvas {:paths [] :lines []})
@@ -135,7 +136,7 @@
 (defn draw [] 
   (if (< @counter 1)
     (do
-      (cart/cart-generator 200)
+      (cart/cart-generator 50)
       (swap! counter inc))
     (do
       (background 0 0 0)
