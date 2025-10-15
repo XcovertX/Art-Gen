@@ -1,6 +1,6 @@
 # Art-Gen
 
-As a new developer and lover of art, I decided to develop a generative art program to explore the depths of procedural art as well as sharpen my newbie dev skills. Art-Gen (when finished) will be a collection of generative tools that will ultimately be controlled by a bot to regularly formulate new works of art, post them to social media, and prioritize sequences that receive positive feedback. 
+As a developer and lover of art, I decided to develop a generative art program to explore the depths of procedural art as well as sharpen my dev skills. Art-Gen (when finished) will be a collection of generative tools that will ultimately be controlled by a bot to regularly formulate new works of art, post them to social media, and prioritize sequences that receive positive feedback. 
 
 I chose to write this in Clojure for a few reasons. First, very little boilerplate was required to get started. This was ideal for experimentation and development of generative art tools. Likewise, the Quil library is lightweight and easy to implement and utilize. Second, I wanted to experiment with functional programming and immutable data structures. Designing the program this way should make multithreading and concurrency easier to tackle. 
 
