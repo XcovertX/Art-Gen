@@ -4,8 +4,6 @@ As a developer and lover of art, I decided to develop a generative art program t
 
 I chose to write this in Clojure for a few reasons. First, very little boilerplate was required to get started. This was ideal for experimentation and development of generative art tools. Likewise, the Quil library is lightweight and easy to implement and utilize. Second, I wanted to experiment with functional programming and immutable data structures. Designing the program this way should make multithreading and concurrency easier to tackle. 
 
-This project is nowhere close to being done given that I have only worked on it during school breaks, however, I have managed to put together a handful of interesting tools for generative art. Here are some of the results: 
-
 ## Triangle Mapping:
 
 The triangle mapping feature first divides the canvas into two triangles. It then recursively divides each triangle to a given depth. To keep the triangles interesting and visually appealing, the function divides each triangle by its longest edge. This creates a more balanced look and avoids long, skinny triangles. The function call specifies the max depth to be achieved and allows for random variables to halt the recursive division prematurely, creating interesting larger triangle "holes" the triangle map. Once the final depth triangle is reached, the function uses a barycentric algorithm to collect all of the pixels within the triangle. The returned result is a map of triangle pixel collections that can be further modified. 
